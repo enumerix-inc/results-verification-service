@@ -9,29 +9,29 @@
   actually speaks its protocol (start/stop/status), since plain
   `python.exe` does not. NSSM registers ITSELF as the service and, under
   the hood, launches and supervises `python -m src.main --run` as a
-  child process — the SCM only ever talks to NSSM, never to Python
+  child process - the SCM only ever talks to NSSM, never to Python
   directly.
 
   This script is idempotent: re-running it against an already-registered
   service reconfigures it in place (via `nssm set`) rather than failing.
   A service that was running before this script touched it is restarted
   afterward; one that was stopped is left stopped unless -Start is
-  passed — reconfiguring should never silently leave an always-on
+  passed - reconfiguring should never silently leave an always-on
   listener stopped (PR review, session 15).
 
   Every native command (nssm, python, pip) has its exit code checked
-  immediately — PowerShell's $ErrorActionPreference does NOT turn a
+  immediately - PowerShell's $ErrorActionPreference does NOT turn a
   nonzero exit code from a native command into a terminating error on
   its own, so without this, a failed nssm call could leave the service
   missing or half-configured while the script still prints success
   (PR review, session 15).
 
   Run this ONCE per machine, as Administrator, after:
-    1. NSSM is installed (see ADR-024 / README — this is a manual,
+    1. NSSM is installed (see ADR-024 / README - this is a manual,
        one-time tooling setup step, not something this script installs
        for you).
     2. `python -m src.main --init` has been run at least once (the
-       database must already exist — this script does not initialise
+       database must already exist - this script does not initialise
        it).
 
 .PARAMETER ServiceName
@@ -43,7 +43,7 @@
 .PARAMETER Start
   Start the service after registering it, even if it was stopped before
   this script ran (e.g. a first-ever install). Has no effect on whether
-  a service that WAS already running gets restarted — that always
+  a service that WAS already running gets restarted - that always
   happens regardless of this switch, so a routine reconfigure never
   leaves the service stopped.
 #>
@@ -63,7 +63,7 @@ $LogsDir = Join-Path $RepoRoot "logs"
 
 # -u: run Python unbuffered. NSSM redirects stdout/stderr to a file, not
 # a terminal, and Python's stdout is block-buffered (not line-buffered)
-# whenever it isn't attached to a real terminal — so without -u, print()
+# whenever it isn't attached to a real terminal - so without -u, print()
 # output (main.py's only form of logging) can sit invisibly in a buffer
 # for a long time before it's actually written to the log file, making
 # the only live view into the running service unreliable (PR review,
@@ -99,9 +99,20 @@ function Invoke-Checked {
 
 # --- Sanity checks ---------------------------------------------------------
 
+# NSSM 2.24's `version` command prints its banner and then usage text and
+# exits nonzero, so Invoke-Nssm (which throws on a nonzero exit) can't be
+# used here. Run it directly and check the banner instead.
+$nssmOk = $false
 try {
-    Invoke-Nssm version | Out-Null
+    $ErrorActionPreference = "Continue"
+    $nssmBanner = (& $NssmPath version 2>&1 | Out-String)
+    $nssmOk = ($nssmBanner -match "NSSM")
 } catch {
+    $nssmOk = $false
+} finally {
+    $ErrorActionPreference = "Stop"
+}
+if (-not $nssmOk) {
     $msg = "Could not run '$NssmPath'. Install NSSM (https://nssm.cc) and " +
         "either put nssm.exe on PATH or pass -NssmPath <path-to-nssm.exe>."
     Write-Error $msg
@@ -109,7 +120,7 @@ try {
 }
 
 if (-not (Test-Path $PythonExe)) {
-    Write-Host "No .venv found at $PythonExe — creating one and installing dependencies..."
+    Write-Host "No .venv found at $PythonExe - creating one and installing dependencies..."
     Invoke-Checked "python -m venv" { python -m venv (Join-Path $RepoRoot ".venv") }
     Invoke-Checked "pip install" {
         & $PythonExe -m pip install --quiet -r (Join-Path $RepoRoot "requirements.txt")
@@ -136,7 +147,7 @@ $restoreFailure = $null
 
 try {
     if ($existing) {
-        Write-Host "Service '$ServiceName' already exists — reconfiguring in place."
+        Write-Host "Service '$ServiceName' already exists - reconfiguring in place."
         $wasRunning = ($existing.Status -eq "Running")
         if ($wasRunning) {
             Write-Host "Stopping it first..."
@@ -156,7 +167,7 @@ try {
     Invoke-Nssm set $ServiceName Description "Always-on listener/orchestrator for the PCR regression verification service (ADR-015). See docs/adr in the repo."
     Invoke-Nssm set $ServiceName Start SERVICE_AUTO_START
 
-    # Logs — NSSM redirects the child process's stdout/stderr (main.py's
+    # Logs - NSSM redirects the child process's stdout/stderr (main.py's
     # plain print() calls) to these files, with basic rotation so they don't
     # grow forever.
     Invoke-Nssm set $ServiceName AppStdout (Join-Path $LogsDir "service_stdout.log")
@@ -166,18 +177,18 @@ try {
     Invoke-Nssm set $ServiceName AppRotateBytes 10485760   # 10 MB per file
 
     # Stop behavior: try a Ctrl+C-style console signal first (main.py now
-    # catches this cleanly — see the run() docstring) and give it up to 60s,
+    # catches this cleanly - see the run() docstring) and give it up to 60s,
     # since asyncio.run()'s shutdown waits for any in-flight verify_run() to
     # actually finish before returning. Window-message and thread-message
     # stop methods don't apply to a console app with no window, so leave
-    # their (short) defaults — NSSM will fall through them quickly and, if
+    # their (short) defaults - NSSM will fall through them quickly and, if
     # the process still hasn't exited after all methods are tried, terminate
     # it outright as a last resort.
     Invoke-Nssm set $ServiceName AppStopMethodConsole 60000
 
     # Crash recovery: if the process exits on its own (not via a deliberate
     # `nssm stop`/`Stop-Service`), restart it after a short delay rather than
-    # immediately — avoids a tight crash loop if something is wrong at
+    # immediately - avoids a tight crash loop if something is wrong at
     # startup (e.g. the pipeline DB is unreachable).
     Invoke-Nssm set $ServiceName AppExit Default Restart
     Invoke-Nssm set $ServiceName AppRestartDelay 15000
@@ -192,7 +203,7 @@ try {
     $configured = $true
 } finally {
     # A service that was running before this script touched it must be
-    # running again afterwards — on success AND on failure. If a later
+    # running again afterwards - on success AND on failure. If a later
     # `nssm set` throws after the stop above, skipping this would leave
     # the always-on listener down and dispatched runs unprocessed (PR
     # review, session 18). Best-effort: never mask the original error.
@@ -216,7 +227,7 @@ try {
     }
 }
 
-# Success path (only reached when configuration succeeded — a failure
+# Success path (only reached when configuration succeeded - a failure
 # above propagates its own error). A service that was running before was
 # restored in the finally block; if that restore failed, fail here rather
 # than report success with the always-on listener stopped (PR review,

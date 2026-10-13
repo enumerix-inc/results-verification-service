@@ -180,6 +180,40 @@ the E: drive folder identically to the F: result folder (both by its own
 confirmed against a real E: drive folder on the next live run.
 
 
+## Addendum (2026-10-13, first live run on the regression machine)
+
+The first live harness-triggered run after installing the service under
+NSSM completed on the harness side, but verification never started. The
+service log showed the manifest registered correctly, then:
+`Warning: notification for experiment 'MP47b_Adverum_02_261013_1053' with
+no pending manifest - ignoring`.
+
+The notification's `experimentId` now carries a trailing timestamp
+(`{experiment_id}_{yymmdd}_{hhmm}`, the same shape the harness's Imaging
+workflow uses for experiment folders), while the manifest declares the
+bare `experiment_id` (`MP47b_Adverum_02`). `handle_notification()` did an
+exact dictionary lookup, so nothing matched. This amends the payload
+description above and in ADR-012: before this, `experimentId` was bare and
+the timestamped identifier lived in `name`. The database trigger that
+builds the payload (`Triggers.sql`, unchanged since 2025-11) maps
+`experimentId` from `Reports.ExperimentId` ("assigned by IAP") and `name`
+from `Reports.Name`, so the change came from what IAP writes there. The
+date and build it started with are not known; the `Reports` table's
+`Date` and `Version` columns would show it.
+
+Fix: `resolve_notification()` in `main.py`. An exact match still wins, so
+the old bare-`experimentId` shape keeps working. Otherwise a trailing
+`_dddddd_dddd` is stripped from `experimentId` and the lookup retried.
+This is deliberately narrow (a known timestamp shape, only after the exact
+match fails) and is not the removed `{exp_id}_{run_id}_*` regex.
+
+Because `name` may now be the plain experiment name, folder lookups can no
+longer assume `name` is timestamped: when a suffix had to be stripped, the
+timestamped `experimentId` is passed on as the pipeline name used by
+`find_result_folder()` and the E: drive watch; when the match was exact,
+`name` is used as before. The unmatched-notification warning now prints the
+full payload so a future format change is diagnosable from the log alone.
+
 ## Alternatives considered
 - Fix `parse_experiment_notification()` to match the harness's actual
   (bare) format, and add real run_id stamping at the harness/IAP boundary

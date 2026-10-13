@@ -10,6 +10,7 @@ Usage:
 import argparse
 import asyncio
 import json
+import re
 import shutil
 import yaml
 from pathlib import Path
@@ -27,6 +28,38 @@ from src.registration.registrar import register_gold_standard
 # filesystems). Retry with backoff rather than giving up on the first
 # read — see ADR-022 / Copilot review, ticket for manifest_watcher.py.
 MANIFEST_READ_RETRY_DELAYS = (0.1, 0.2, 0.4, 0.8, 1.6)
+
+# The pipeline's Reports.ExperimentId carries a trailing timestamp
+# ("{experiment_id}_{yymmdd}_{hhmm}", e.g. "MP47b_Adverum_02_261013_1053"),
+# while a manifest declares the bare experiment_id. Observed live on
+# 2026-10-13; earlier notifications carried the bare id in experimentId and
+# the timestamped identifier in "name" (see ADR-022 addendum).
+PIPELINE_TIMESTAMP_SUFFIX = re.compile(r"_\d{6}_\d{4}$")
+
+
+def resolve_notification(payload_experiment_id: str, payload_name: str,
+                         expected_ids) -> tuple:
+    """
+    Map a NOTIFY payload to (manifest_experiment_id, pipeline_name).
+
+    manifest_experiment_id is the key into expected_ids (the manifests'
+    bare experiment_ids), or None if the notification matches no pending
+    manifest. pipeline_name is the timestamped identifier the pipeline used
+    for this execution's folders - the value find_result_folder() and the
+    E: drive watch need.
+
+    An exact match always wins (old payload shape: bare experimentId plus a
+    timestamped "name"). Otherwise a trailing _yymmdd_hhmm is stripped from
+    experimentId and the match retried; in that case the timestamped
+    experimentId itself is the pipeline's folder identifier, since "name"
+    may now be the plain experiment name.
+    """
+    if payload_experiment_id in expected_ids:
+        return payload_experiment_id, payload_name
+    stripped = PIPELINE_TIMESTAMP_SUFFIX.sub("", payload_experiment_id)
+    if stripped != payload_experiment_id and stripped in expected_ids:
+        return stripped, payload_experiment_id
+    return None, payload_name
 
 
 def load_config() -> dict:
@@ -352,14 +385,16 @@ async def run_service(config: dict, token: asyncio.Event) -> None:
 
     async def handle_notification(payload: str) -> None:
         data = json.loads(payload)
-        exp_id = data.get("experimentId", "")
-        name = data.get("name", "")
+        raw_id = data.get("experimentId", "")
 
-        run_id = expected_experiment_to_run.get(exp_id)
-        if run_id is None:
-            print(f"Warning: notification for experiment '{exp_id}' with no "
-                  f"pending manifest — ignoring")
+        exp_id, name = resolve_notification(
+            raw_id, data.get("name", ""), expected_experiment_to_run)
+        if exp_id is None:
+            print(f"Warning: notification for experiment '{raw_id}' with no "
+                  f"pending manifest - ignoring. Full payload: {payload}")
             return
+
+        run_id = expected_experiment_to_run[exp_id]
 
         if run_id in processed_run_ids:
             print(f"Run {run_id} already processed — ignoring")
@@ -369,7 +404,8 @@ async def run_service(config: dict, token: asyncio.Event) -> None:
 
         in_progress[run_id].add(exp_id)
         experiment_names[run_id][exp_id] = name
-        print(f"Run {run_id}: notification received for {exp_id} (name={name!r})")
+        print(f"Run {run_id}: notification received for {exp_id} "
+              f"(payload experimentId={raw_id!r}, pipeline name={name!r})")
 
         asyncio.create_task(_watch_experiment(exp_id, run_id, name, expected, config))
 

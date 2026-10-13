@@ -4,11 +4,11 @@
   (see install_verification_service.ps1 / ADR-024).
 
   Does NOT touch the repo, the venv, the database, or any manifests/
-  reports — only the NSSM-registered service entry itself.
+  reports - only the NSSM-registered service entry itself.
 
 .DESCRIPTION
   Checks nssm's exit code after both stop and remove and aborts before
-  claiming success if either fails — PowerShell's $ErrorActionPreference
+  claiming success if either fails - PowerShell's $ErrorActionPreference
   does not turn a native command's nonzero exit code into a terminating
   error on its own, so without this a failed `nssm stop` would not have
   stopped a failed `nssm remove` from being attempted, and a failed
@@ -31,7 +31,7 @@ function Invoke-Nssm {
 
 $existing = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 if (-not $existing) {
-    Write-Host "No service named '$ServiceName' found — nothing to do."
+    Write-Host "No service named '$ServiceName' found - nothing to do."
     exit 0
 }
 
