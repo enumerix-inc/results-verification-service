@@ -193,13 +193,16 @@ The notification's `experimentId` now carries a trailing timestamp
 workflow uses for experiment folders), while the manifest declares the
 bare `experiment_id` (`MP47b_Adverum_02`). `handle_notification()` did an
 exact dictionary lookup, so nothing matched. This amends the payload
-description above and in ADR-012: before this, `experimentId` was bare and
-the timestamped identifier lived in `name`. The database trigger that
-builds the payload (`Triggers.sql`, unchanged since 2025-11) maps
-`experimentId` from `Reports.ExperimentId` ("assigned by IAP") and `name`
-from `Reports.Name`, so the change came from what IAP writes there. The
-date and build it started with are not known; the `Reports` table's
-`Date` and `Version` columns would show it.
+description above and in ADR-012, which describe a bare `experimentId`
+with the timestamped identifier in `name`. That description most likely
+came from payloads fired by hand from pgAdmin (the session-14 recovery
+replayed NOTIFYs manually; ADR-013's mock payload is also hand-written),
+not from live pipeline traffic, so the live pipeline may never have sent
+a bare `experimentId`. This is unconfirmed: the older rows in the
+`Reports` table (`ExperimentId`, `Date`, `Version`) would show whether the
+suffix was always there. The database trigger that builds the payload
+(`Triggers.sql`, unchanged since 2025-11) maps `experimentId` from
+`Reports.ExperimentId` ("assigned by IAP") and `name` from `Reports.Name`.
 
 Fix: `resolve_notification()` in `main.py`. An exact match still wins, so
 the old bare-`experimentId` shape keeps working. Otherwise a trailing

@@ -32,8 +32,8 @@ MANIFEST_READ_RETRY_DELAYS = (0.1, 0.2, 0.4, 0.8, 1.6)
 # The pipeline's Reports.ExperimentId carries a trailing timestamp
 # ("{experiment_id}_{yymmdd}_{hhmm}", e.g. "MP47b_Adverum_02_261013_1053"),
 # while a manifest declares the bare experiment_id. Observed live on
-# 2026-10-13; earlier notifications carried the bare id in experimentId and
-# the timestamped identifier in "name" (see ADR-022 addendum).
+# 2026-10-13. Hand-fired test payloads used a bare experimentId, so both
+# shapes are accepted (see ADR-022 addendum).
 PIPELINE_TIMESTAMP_SUFFIX = re.compile(r"_\d{6}_\d{4}$")
 
 
