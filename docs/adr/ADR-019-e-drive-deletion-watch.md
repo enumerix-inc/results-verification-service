@@ -169,6 +169,29 @@ Comparisons, reports, DB writes
 - Metafolder (E:\CountableLabs\Data\metafolder) is explicitly NOT
   watched at this stage — see ADR-020
 
+## Addendum (2026-10-14): poll for the folder leaving E: instead of watching for deletion events
+Two runs on the regression machine timed out at 600 s even though the
+pipeline had finished. The Report Loader's log showed why: it saves the
+report (the NOTIFY), copies outputs to F:, then removes the folder from
+`ReportData` - and on that machine `COUNTABLE_PCR_DELETE_REPORT_DATA` is
+false, so it MOVES the folder to `Uploaded_To_Database` rather than deleting
+it. The move landed about 30 ms after the NOTIFY. The service only handled
+`on_deleted` watchdog events, and its "already absent" pre-check could run
+just before the move, so the event was never seen.
+
+The signal itself is still right (the folder leaving `ReportData` is the
+first point at which the F: copy is known complete, because the loader copies
+before it cleans up), so it is kept. The mechanism changed: `watcher.py` now
+polls (default every 2 s, `e_drive_poll_seconds`) for no folder matching
+`{name}*` under `ReportData`. This covers delete, move, and the 30 ms race,
+and removes the watchdog event handler from this path. The timeout
+(`e_drive_deletion_timeout_seconds`, 600 s) is unchanged - the wait starts at
+the NOTIFY, which fires after analysis completes, so it only needs to cover
+the copy and cleanup.
+
+Acting on the NOTIFY alone remains rejected, for the original reason: it
+fires before the F: copy.
+
 ## Alternatives considered
 - Poll F: drive on an interval — rejected because interval tuning is
   arbitrary and partial reads are possible if the interval is too short

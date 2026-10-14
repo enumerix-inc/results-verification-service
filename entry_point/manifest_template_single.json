@@ -1,0 +1,42 @@
+{
+  "build_verdict_policy": {
+    "rule": "all_stability_experiments_must_pass",
+    "on_exploratory_failure": "warn_only"
+  },
+  "experiments": [
+    {
+      "experiment_id": "MP47b_Adverum_02",
+      "feature_set": "linkage",
+      "classification": "exploratory",
+      "counts_for_build_verdict": false,
+      "result_file_suffix": "CountableLinkageSummary_beta.csv",
+      "image_source": "E:\\CountableLabs\\Data\\MP47b_Adverum_02",
+      "sample_workbook": "E:\\CountableLabs\\Data\\MP47b_Adverum_02\\Workbook_MP47b_Adverum_02.json",
+      "comparisons": [
+        {
+          "type": "hybrid_tolerance",
+          "tolerance_percent": 10.0,
+          "absolute_tolerance": 2,
+          "count_threshold": 100,
+          "columns": [
+            "UM-01_only",
+            "UM-02_only",
+            "UM-03_only",
+            "UM-04_only",
+            "UM-01_UM-02",
+            "UM-01_UM-03",
+            "UM-01_UM-04",
+            "UM-02_UM-03",
+            "UM-02_UM-04",
+            "UM-03_UM-04",
+            "UM-01_UM-02_UM-03",
+            "UM-01_UM-02_UM-04",
+            "UM-01_UM-03_UM-04",
+            "UM-02_UM-03_UM-04",
+            "UM-01_UM-02_UM-03_UM-04"
+          ]
+        }
+      ]
+    }
+  ]
+}
