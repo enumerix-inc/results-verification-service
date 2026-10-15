@@ -30,14 +30,34 @@ on:
         required: false
         type: string
         default: "new_build_regression_baseline"
-      run_type:
-        description: "Run mode passed to the test harness."
+      runner_label:
+        description: >-
+          Label of the self-hosted runner to run on. Leave as pcr-regression
+          for the real regression machine; use pcr-regression-test to target
+          a test runner registered with that label.
+        required: false
+        type: string
+        default: pcr-regression
+      template:
+        description: >-
+          Which manifest template to stamp. "full" runs every experiment in
+          manifest_template.json (the real regression run). "single" runs only
+          the one experiment in manifest_template_single.json - quick, for
+          smoke-testing the pipeline end to end.
         required: false
         type: choice
         options:
-          - Reanalysis
-          - Imaging
-        default: Reanalysis
+          - full
+          - single
+        default: full
+      harness_timeout_minutes:
+        description: >-
+          Cap, in minutes, on how long the harness step may run. The harness
+          does not exit until reanalysis of every experiment finishes, and a
+          multi-experiment run takes hours.
+        required: false
+        type: number
+        default: 720
 
 # The self-hosted runner is one physical regression machine — only one
 # run can meaningfully happen on it at a time anyway, but make that
@@ -48,7 +68,7 @@ concurrency:
 
 jobs:
   trigger:
-    runs-on: [self-hosted, pcr-regression]
+    runs-on: [self-hosted, "${{ inputs.runner_label }}"]
 
     # Dispatch inputs are exposed as real environment variables here rather
     # than being interpolated as `${{ inputs.* }}` text directly into any
@@ -64,7 +84,7 @@ jobs:
     env:
       PIPELINE_BUILD: ${{ inputs.pipeline_build }}
       SCENARIO: ${{ inputs.scenario }}
-      RUN_TYPE: ${{ inputs.run_type }}
+      TEMPLATE: ${{ inputs.template }}
 
     steps:
       - name: Checkout results-verification-service
@@ -90,11 +110,19 @@ jobs:
       - name: Stamp a new run manifest
         id: stamp
         shell: pwsh
+        # The harness only runs Reanalysis (--reanalysis-only, below), so the
+        # run type is fixed here rather than being a dispatch input.
         run: |
+          $template = if ($env:TEMPLATE -eq "single") {
+            "entry_point\manifest_template_single.json"
+          } else {
+            "entry_point\manifest_template.json"
+          }
           & ".venv\Scripts\python.exe" entry_point\stamp_manifest_for_run.py `
             --pipeline-build "$env:PIPELINE_BUILD" `
             --scenario "$env:SCENARIO" `
-            --run-type "$env:RUN_TYPE"
+            --run-type Reanalysis `
+            --template $template
 
       - name: Run the test harness
         id: harness
@@ -102,20 +130,40 @@ jobs:
         # COUNTABLE_PCR_REGRESSION_TEST_MANIFEST_PATH must be the manifests
         # *folder* (Countable.Pcr.TestHarness/Program.cs globs it), i.e.
         # the same value as this repo's config.paths.manifests_dir on this
-        # machine. Set both repo variables once in
-        # Settings -> Secrets and variables -> Actions -> Variables.
+        # machine. Set these repo variables once in
+        # Settings -> Secrets and variables -> Actions -> Variables:
+        #   PCR_MANIFESTS_DIR          the manifests folder (as above)
+        #   PCR_TEST_HARNESS_EXE_PATH  full path to Countable.Pcr.TestHarness.exe
+        #   PCR_APP_INSTALL_DIR        optional; defaults to
+        #     C:\Program Files\Countable Labs\Countable Control Software
         #
-        # A 3-hour cap guards against Program.cs's `catch { ... Console.Read(); }`
-        # on a fatal, unhandled exception — that blocks forever waiting for
-        # console input that will never come on a runner. This does not fix
-        # that (out of scope here — see STATUS.md open design questions,
-        # harness changes are being deferred), it just keeps one bad run
-        # from occupying the runner indefinitely.
-        timeout-minutes: 180
+        # The harness resolves its Config\ and appsettings.json relative to
+        # the current directory, so this step starts in the app's install
+        # folder (the equivalent of the old shortcut's "Start in"). It also
+        # restarts CountableAnalysisService and carries a requireAdministrator
+        # manifest, so the runner must run elevated.
+        #
+        # --reanalysis-only skips instrument hardware initialization; the
+        # harness refuses any manifest that contains an Imaging experiment.
+        #
+        # An unhandled harness error prints [FATAL] and exits 1 (it no longer
+        # waits for a keypress when input is redirected), so a failure shows
+        # up as a failed step. The timeout is a safety cap for a genuinely
+        # stuck run; it is a dispatch input because multi-experiment runs
+        # take hours.
+        timeout-minutes: ${{ inputs.harness_timeout_minutes }}
         env:
           COUNTABLE_PCR_REGRESSION_TEST_MANIFEST_PATH: ${{ vars.PCR_MANIFESTS_DIR }}
+          HARNESS_EXE: ${{ vars.PCR_TEST_HARNESS_EXE_PATH }}
+          APP_DIR: ${{ vars.PCR_APP_INSTALL_DIR }}
         run: |
-          & "${{ vars.PCR_TEST_HARNESS_EXE_PATH }}"
+          if (-not $env:HARNESS_EXE) {
+            Write-Error "Repo variable PCR_TEST_HARNESS_EXE_PATH is not set."
+            exit 1
+          }
+          $appDir = if ($env:APP_DIR) { $env:APP_DIR } else { "C:\Program Files\Countable Labs\Countable Control Software" }
+          Set-Location -LiteralPath $appDir
+          & $env:HARNESS_EXE --reanalysis-only
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Test harness exited with code $LASTEXITCODE"
             exit $LASTEXITCODE
@@ -150,7 +198,7 @@ jobs:
             Write-Summary "- **run_id:** ${{ steps.stamp.outputs.run_id }}"
             Write-Summary "- **manifest:** ``${{ steps.stamp.outputs.manifest_path }}``"
             Write-Summary ""
-            Write-Summary "A manifest was stamped, but the test harness step did not exit successfully — either it returned a nonzero exit code, or it hit the 180-minute timeout (a likely sign of Program.cs's known Console.Read() hang on an unhandled exception; see STATUS.md). Check the 'Run the test harness' step log. The stamped manifest is still sitting in manifests_dir unarchived — the running verification service will eventually move it to timed_out/ once its own E: drive watch times out, but it will not be verified."
+            Write-Summary "A manifest was stamped, but the test harness step did not exit successfully — either it returned a nonzero exit code (an unhandled error prints [FATAL] and exits 1) or it hit the harness_timeout_minutes cap. Check the 'Run the test harness' step log. The stamped manifest is still sitting in manifests_dir unarchived — the running verification service will eventually move it to timed_out/ once its own E: drive watch times out, but it will not be verified."
           } else {
             Write-Summary "### Regression run triggered"
             Write-Summary ""
@@ -158,7 +206,8 @@ jobs:
             Write-Summary "- **manifest:** ``${{ steps.stamp.outputs.manifest_path }}``"
             Write-Summary "- **pipeline_build:** $env:PIPELINE_BUILD"
             Write-Summary "- **scenario:** $env:SCENARIO"
-            Write-Summary "- **run_type:** $env:RUN_TYPE"
+            Write-Summary "- **template:** $env:TEMPLATE"
+            Write-Summary "- **run_type:** Reanalysis (harness runs with --reanalysis-only)"
             Write-Summary ""
             Write-Summary "The harness process has exited successfully. Verification happens asynchronously — check the verification service for the actual result."
           }
