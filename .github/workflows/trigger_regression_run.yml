@@ -151,7 +151,7 @@ jobs:
         # up as a failed step. The timeout is a safety cap for a genuinely
         # stuck run; it is a dispatch input because multi-experiment runs
         # take hours.
-        timeout-minutes: ${{ inputs.harness_timeout_minutes }}
+        timeout-minutes: ${{ fromJSON(inputs.harness_timeout_minutes) }}
         env:
           COUNTABLE_PCR_REGRESSION_TEST_MANIFEST_PATH: ${{ vars.PCR_MANIFESTS_DIR }}
           HARNESS_EXE: ${{ vars.PCR_TEST_HARNESS_EXE_PATH }}
