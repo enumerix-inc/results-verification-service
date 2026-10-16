@@ -64,6 +64,13 @@ C:/RegressionTesting/
 
 Paths are configured in `config/config.yaml`.
 
+## Credentials and local configuration
+
+`config/config.yaml` is tracked and holds defaults only. Its `database_connection` is a placeholder.
+Put real credentials and machine-specific paths in `config/local_config.yaml`, which is gitignored and
+loaded instead of `config.yaml` when it exists. Never commit real passwords. The planned installer will
+generate this per-machine file outside the program folder.
+
 ## Setup
 
 1. Install dependencies:

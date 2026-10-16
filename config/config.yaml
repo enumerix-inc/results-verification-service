@@ -22,7 +22,9 @@ paths:
 
 pipeline:
   # Connection string for the central pipeline database
-  database_connection: "postgresql://postgres:FiLh4iAV8OWc7w5e+YvNvK3uhIWdN6cCce2oRjAxbE8=@localhost:5432/countablelabs"
+  # Placeholder only. Real credentials go in config/local_config.yaml (gitignored),
+  # never in this tracked file.
+  database_connection: "postgresql://<user>:<password>@localhost:5432/countablelabs"
   # How often to poll for completed runs (seconds)
   polling_interval_seconds: 30
 
