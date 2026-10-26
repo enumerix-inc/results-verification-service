@@ -26,6 +26,11 @@
 .PARAMETER Version
   Installer version number (shown in Add/Remove Programs).
 
+.PARAMETER IsccPath
+  Full path to ISCC.exe (the Inno Setup compiler). When omitted, Inno Setup 7
+  then 6 are looked for under Program Files, Program Files (x86), the
+  per-user Programs folder, and PATH.
+
 .PARAMETER SkipCompile
   Build the payload only; do not run the Inno Setup compiler.
 #>
@@ -33,6 +38,7 @@ param(
     [Parameter(Mandatory)][string]$NssmExe,
     [string]$PythonVersion = "3.10.11",
     [string]$Version = "0.1.0",
+    [string]$IsccPath = "",
     [switch]$SkipCompile
 )
 
@@ -128,12 +134,25 @@ Write-Host "Payload ready: $Payload"
 
 # --- 6. Compile --------------------------------------------------------------
 if ($SkipCompile) { return }
-$iscc = @(
-    "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
-    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-) | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $IsccPath) {
+    # Inno Setup installs to "Inno Setup <major>", system-wide or per-user.
+    $candidates = @()
+    foreach ($root in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, (Join-Path $env:LOCALAPPDATA "Programs"))) {
+        if ($root) {
+            foreach ($major in @("7", "6")) {
+                $candidates += (Join-Path $root "Inno Setup $major\ISCC.exe")
+            }
+        }
+    }
+    $IsccPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if (-not $IsccPath) {
+        $onPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+        if ($onPath) { $IsccPath = $onPath.Source }
+    }
+}
+$iscc = $IsccPath
 if (-not $iscc) {
-    Write-Warning "Inno Setup 6 (ISCC.exe) not found - payload built, installer not compiled."
+    Write-Warning "ISCC.exe (Inno Setup compiler) not found - payload built, installer not compiled. Pass -IsccPath <full path to ISCC.exe>."
     return
 }
 Invoke-Checked "ISCC" { & $iscc "/DAppVersion=$Version" (Join-Path $InstallerDir "rvs.iss") }

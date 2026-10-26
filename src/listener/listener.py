@@ -56,6 +56,7 @@ async def listen_async(config: dict, token: asyncio.Event, on_notification) -> N
                 conn.add_termination_listener(lambda _: conn_terminated.set())
 
                 await conn.add_listener(CHANNEL, _handler)
+                print(f"Listening on channel '{CHANNEL}'")
 
                 # Wait for shutdown OR connection drop — whichever comes first.
                 # Without this, a dropped connection leaves the service silently idle.

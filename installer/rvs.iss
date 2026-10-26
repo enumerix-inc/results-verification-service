@@ -242,8 +242,8 @@ begin
     ServiceDir, SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
   if (not Result) and (not WizardSilent) then
     if LoadStringFromFile(LogFile, Output) then
-      MsgBox('The service will be installed but not started, because a preflight check failed:' +
-        #13#10#13#10 + String(Output) + #13#10 +
+      MsgBox('The service will be installed but not started, because a preflight check failed:' + #13#10#13#10 +
+        String(Output) + #13#10 +
         'Fix the cause, then start the service with: Start-Service {#ServiceName}',
         mbInformation, MB_OK);
 end;
