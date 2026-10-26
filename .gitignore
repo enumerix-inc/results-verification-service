@@ -32,3 +32,6 @@ config/local_config.yaml
 .DS_Store
 Thumbs.db
 logs/
+installer/payload/
+installer/cache/
+installer/Output/

@@ -40,6 +40,26 @@
 .PARAMETER NssmPath
   Path to nssm.exe. Defaults to assuming it's on PATH.
 
+.PARAMETER AppDir
+  Folder holding src/, schema/ and scripts/. Defaults to the repo root
+  (this script's parent directory), which is also the installed layout's
+  service folder.
+
+.PARAMETER PythonExe
+  Interpreter the service runs under. Defaults to <AppDir>\.venv (created
+  on first use, the development layout). The installer passes its bundled
+  embeddable Python instead; in that case it must already exist.
+
+.PARAMETER ConfigDir
+  Folder holding the per-machine local_config.yaml. When set, the service
+  is started with RVS_CONFIG pointing there, so config lives outside the
+  program folder and survives upgrades. When empty, the service reads
+  <AppDir>\config as before.
+
+.PARAMETER LogsDir
+  Where NSSM writes service_stdout.log / service_stderr.log. Defaults to
+  <AppDir>\logs.
+
 .PARAMETER Start
   Start the service after registering it, even if it was stopped before
   this script ran (e.g. a first-ever install). Has no effect on whether
@@ -50,6 +70,10 @@
 param(
     [string]$ServiceName = "ResultsVerificationService",
     [string]$NssmPath = "nssm",
+    [string]$AppDir = "",
+    [string]$PythonExe = "",
+    [string]$ConfigDir = "",
+    [string]$LogsDir = "",
     [switch]$Start
 )
 
@@ -57,9 +81,10 @@ $ErrorActionPreference = "Stop"
 
 # Repo root is this script's parent directory (scripts/ lives at the repo
 # top level).
-$RepoRoot = Split-Path -Parent $PSScriptRoot
-$PythonExe = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-$LogsDir = Join-Path $RepoRoot "logs"
+$RepoRoot = if ($AppDir) { $AppDir } else { Split-Path -Parent $PSScriptRoot }
+$UseDevVenv = -not $PythonExe
+if ($UseDevVenv) { $PythonExe = Join-Path $RepoRoot ".venv\Scripts\python.exe" }
+if (-not $LogsDir) { $LogsDir = Join-Path $RepoRoot "logs" }
 
 # -u: run Python unbuffered. NSSM redirects stdout/stderr to a file, not
 # a terminal, and Python's stdout is block-buffered (not line-buffered)
@@ -119,7 +144,12 @@ if (-not $nssmOk) {
     exit 1
 }
 
-if (-not (Test-Path $PythonExe)) {
+if (-not $UseDevVenv -and -not (Test-Path $PythonExe)) {
+    Write-Error "PythonExe not found: $PythonExe"
+    exit 1
+}
+
+if ($UseDevVenv -and -not (Test-Path $PythonExe)) {
     Write-Host "No .venv found at $PythonExe - creating one and installing dependencies..."
     Invoke-Checked "python -m venv" { python -m venv (Join-Path $RepoRoot ".venv") }
     Invoke-Checked "pip install" {
@@ -127,7 +157,7 @@ if (-not (Test-Path $PythonExe)) {
     }
 }
 
-$ConfigPath = Join-Path $RepoRoot "config\local_config.yaml"
+$ConfigPath = if ($ConfigDir) { Join-Path $ConfigDir "local_config.yaml" } else { Join-Path $RepoRoot "config\local_config.yaml" }
 if (-not (Test-Path $ConfigPath)) {
     $configMsg = "config\local_config.yaml not found - the service will fall " +
         "back to config\config.yaml. If this machine needs its own local " +
@@ -163,6 +193,13 @@ try {
     # the service in the same known configuration.
     Invoke-Nssm set $ServiceName AppDirectory $RepoRoot
     Invoke-Nssm set $ServiceName AppParameters $ServiceArgs
+    # Point the service at the per-machine config. An environment variable
+    # rather than a --config argument: the path contains spaces, and
+    # Windows PowerShell 5.1 mangles embedded quotes when it passes a
+    # string to a native command.
+    if ($ConfigDir) {
+        Invoke-Nssm set $ServiceName AppEnvironmentExtra "RVS_CONFIG=$ConfigDir"
+    }
     Invoke-Nssm set $ServiceName DisplayName "Countable PCR Results Verification Service"
     Invoke-Nssm set $ServiceName Description "Always-on listener/orchestrator for the PCR regression verification service (ADR-015). See docs/adr in the repo."
     Invoke-Nssm set $ServiceName Start SERVICE_AUTO_START
