@@ -5,6 +5,10 @@ Usage:
     python -m src.main --init      Initialise the database
     python -m src.main --register  Run the gold standard registration tool
     python -m src.main --run       Start the verification service
+    python -m src.main --preflight Check paths and database connectivity
+
+Add --config <file-or-dir> (or set RVS_CONFIG) to read config from outside
+the repo, e.g. the installer's per-machine config under ProgramData.
 """
 
 import argparse
@@ -12,9 +16,9 @@ import asyncio
 import json
 import re
 import shutil
-import yaml
 from pathlib import Path
 
+from src.config_loader import load_config
 from src.database.db import get_connection, initialise_database
 from src.database.models import get_all_processed_run_ids, get_all_reported_run_ids
 from src.listener.listener import listen_async, listen_async_mock
@@ -60,16 +64,6 @@ def resolve_notification(payload_experiment_id: str, payload_name: str,
     if stripped != payload_experiment_id and stripped in expected_ids:
         return stripped, payload_experiment_id
     return None, payload_name
-
-
-def load_config() -> dict:
-    """Load configuration from local_config.yaml if it exists, else config.yaml."""
-    config_dir = Path(__file__).parent.parent / "config"
-    local = config_dir / "local_config.yaml"
-    default = config_dir / "config.yaml"
-    config_path = local if local.exists() else default
-    with open(config_path) as f:
-        return yaml.safe_load(f)
 
 
 def init(config: dict) -> None:
@@ -479,9 +473,14 @@ if __name__ == "__main__":
     group.add_argument("--init", action="store_true", help="Initialise the database")
     group.add_argument("--register", action="store_true", help="Register gold standards")
     group.add_argument("--run", action="store_true", help="Start the service")
+    group.add_argument("--preflight", action="store_true",
+                       help="Check paths and database connectivity, then exit")
+    parser.add_argument("--config", metavar="PATH",
+                        help="Config file, or a directory holding local_config.yaml "
+                             "(also settable via the RVS_CONFIG environment variable)")
     args = parser.parse_args()
 
-    config = load_config()
+    config = load_config(args.config)
 
     if args.init:
         init(config)
@@ -489,3 +488,6 @@ if __name__ == "__main__":
         register(config)
     elif args.run:
         run(config)
+    elif args.preflight:
+        from src.preflight import run_preflight
+        raise SystemExit(run_preflight(config))

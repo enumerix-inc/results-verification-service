@@ -28,3 +28,4 @@ Architecture Decision Records for the results verification service.
 | [ADR-022](ADR-022-explicit-manifest-handoff.md) | Explicit manifest hand-off replaces run_id stamping for run correlation | Accepted |
 | [ADR-023](ADR-023-github-actions-entry-point.md) | GitHub Actions as the manual regression-run entry point | Accepted |
 | [ADR-024](ADR-024-windows-service-wrapper.md) | NSSM-wrapped Windows Service for the verification service | Accepted |
+| [ADR-025](ADR-025-installer.md) | Inno Setup installer with bundled Python and a per-machine config | Proposed |
