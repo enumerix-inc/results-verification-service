@@ -20,7 +20,7 @@ from pathlib import Path
 
 from src.annotation.annotation import (AnnotationError, find_annotation,
                                        load_annotation)
-from src.registration.registrar import read_gold_standard_csv
+from src.summary_csv import read_summary_csv
 
 SAMPLE_NAME_COLUMN = "SampleName"
 _REPO_ANNOTATIONS = Path(__file__).resolve().parents[2] / "annotations"
@@ -67,7 +67,7 @@ def main(argv=None) -> int:
         print(f"ERROR: {e}")
         return 1
 
-    records = read_gold_standard_csv(args.summary_csv)
+    records = read_summary_csv(args.summary_csv)
     if not records or SAMPLE_NAME_COLUMN not in records[0]:
         print(f"ERROR: no '{SAMPLE_NAME_COLUMN}' column in {args.summary_csv}")
         return 1

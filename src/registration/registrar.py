@@ -12,12 +12,12 @@ Entry point: register_gold_standard()
 # require a pivot preprocessing step — see STATUS.md.
 """
 
-import csv
 import hashlib
 import json
 import uuid
 from datetime import datetime, timezone
 
+from src.summary_csv import METADATA_ROWS, read_summary_csv  # noqa: F401 (METADATA_ROWS re-exported)
 from src.database.models import (
     get_active_gs_version,
     insert_gs_exp_version,
@@ -26,7 +26,6 @@ from src.database.models import (
 )
 
 SAMPLE_ID_COLUMN = "SampleID"
-METADATA_ROWS = 4
 
 
 def compute_checksum(file_path: str) -> str:
@@ -40,10 +39,7 @@ def compute_checksum(file_path: str) -> str:
 
 def read_gold_standard_csv(file_path: str) -> list[dict]:
     """Read a gold standard CSV and return a list of sample dicts."""
-    with open(file_path, newline="", encoding="utf-8-sig") as f:
-        for _ in range(METADATA_ROWS):
-            f.readline()
-        return list(csv.DictReader(f))
+    return read_summary_csv(file_path)
 
 
 def register_gold_standard(conn, experiment_id: str, file_path: str,
