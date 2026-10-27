@@ -1,0 +1,117 @@
+{
+  "build_verdict_policy": {
+    "rule": "all_stability_experiments_must_pass",
+    "on_exploratory_failure": "warn_only"
+  },
+  "experiments": [
+    {
+      "experiment_id": "MP37_V_V_Testcase_2_beta05",
+      "feature_set": "acceptance_criteria_tc1_2",
+      "classification": "stability",
+      "counts_for_build_verdict": false,
+      "image_source": "E:\\CountableLabs\\Data\\MP37_V_V_Testcase_2_beta05",
+      "sample_workbook": "E:\\CountableLabs\\Data\\MP37_V_V_Testcase_2_beta05\\Workbook_MP37_V_V_Testcase_2_beta05.json",
+      "comparisons": [
+        {
+          "type": "acceptance_criteria",
+          "annotation": "MP37_V_V_Testcase_2_beta05",
+          "columns": {
+            "Ch01": "UM-01_CountsPer50ul",
+            "Ch02": "UM-02_CountsPer50ul",
+            "Ch03": "UM-03_CountsPer50ul",
+            "Ch04": "UM-04_CountsPer50ul"
+          },
+          "criteria": [
+            {
+              "id": "linearity_exponent",
+              "metric": "loglog_slope",
+              "groups": [
+                "FourPlex_1k",
+                "FourPlex_10k",
+                "FourPlex_100k"
+              ],
+              "lower": 0.9,
+              "lower_inclusive": false,
+              "upper": 1.1,
+              "upper_inclusive": false
+            },
+            {
+              "id": "linear_slope",
+              "metric": "geomean_recovery",
+              "groups": [
+                "FourPlex_1k",
+                "FourPlex_10k",
+                "FourPlex_100k"
+              ],
+              "lower": 0.7,
+              "lower_inclusive": false,
+              "upper": 1.2,
+              "upper_inclusive": false
+            },
+            {
+              "id": "plateauing_ratio_1M",
+              "metric": "plateau_ratio",
+              "groups": [
+                "FourPlex_1M"
+              ],
+              "fit_groups": [
+                "FourPlex_1k",
+                "FourPlex_10k",
+                "FourPlex_100k"
+              ],
+              "lower": -0.2,
+              "lower_inclusive": true,
+              "upper": 0.2,
+              "upper_inclusive": true
+            },
+            {
+              "id": "cv_1k",
+              "metric": "cv",
+              "groups": [
+                "FourPlex_1k"
+              ],
+              "upper": 0.1,
+              "upper_inclusive": false
+            },
+            {
+              "id": "cv_10k",
+              "metric": "cv",
+              "groups": [
+                "FourPlex_10k"
+              ],
+              "upper": 0.1,
+              "upper_inclusive": false
+            },
+            {
+              "id": "cv_100k",
+              "metric": "cv",
+              "groups": [
+                "FourPlex_100k"
+              ],
+              "upper": 0.1,
+              "upper_inclusive": false
+            },
+            {
+              "id": "cv_1M",
+              "metric": "cv",
+              "groups": [
+                "FourPlex_1M"
+              ],
+              "upper": 0.1,
+              "upper_inclusive": false
+            },
+            {
+              "id": "ntc_mean_counts",
+              "metric": "mean_counts",
+              "groups": [
+                "FourPlex_0"
+              ],
+              "upper": 50,
+              "upper_inclusive": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

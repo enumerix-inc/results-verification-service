@@ -49,6 +49,9 @@ A SHA-256 hash of a gold standard CSV file, computed and stored at registration 
 **Listener**
 The entry point of the verification service. Polls the pipeline database at a fixed interval for completed runs. Because the regression machine is isolated, every run detected is by definition a test run — no filtering required.
 
+**Acceptance criteria comparison**
+An aggregate-scope comparison (`type: acceptance_criteria`) in an experiment's `comparisons` list that judges a metric computed over groups of samples (linearity exponent, linear slope, plateauing ratio, CV, NTC mean) against absolute limits instead of a gold standard (ADR-026). Each criterion records its lower/upper bound and whether each bound is inclusive. The release decision stays with a person reading the report.
+
 **Sample annotation**
 A sidecar YAML file, one per experiment_id, that assigns each sample a group, role and expected counts per channel using ordered regex rules over SampleName (ADR-026). Strict: every sample must match exactly one rule. Expected counts: an integer = assay with that many copies, `0` = assay with no template (no-template control), `null` = no assay on that channel. Its SHA-256 and `annotation_version` are recorded with every result. Never written into the workbook's GroupName.
 

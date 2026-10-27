@@ -76,7 +76,7 @@ Facts that shape the design:
    experiment whose comparisons are all aggregate-scope needs no registered gold
    standard. `experiment_results.gs_exp_version_id` is already nullable.
 7. **Input is the CountableDataSummary CSV only.** It is the existing wide format
-   (four preamble rows, one row per sample, `Ch01_CountsPer50ul` ... columns), already
+   (four preamble rows, one row per sample, `UM-01_CountsPer50ul` ... columns, named after the dye from software 3.0 onwards; earlier outputs used `Ch01_...`). Channels (`Ch01`...) are logical names in the annotation and criteria; the manifest `columns` map translates them to whatever the CSV calls them (dye names differ by software version and assay, e.g. TaqMan), already
    read by the registrar. RnDdata (long form, inside the archived metadata) and the
    linkage summary are out of scope for now. The reader stays behind an interface so
    other pipeline outputs can be added later.
