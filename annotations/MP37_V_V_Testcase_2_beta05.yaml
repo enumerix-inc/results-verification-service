@@ -1,0 +1,50 @@
+# Sample annotation for experiment MP37_V_V_Testcase_2_beta05 (ADR-026, TES-2871).
+# 96 samples: 64 FourPlex_<level>_<rep> (8 levels x 8 reps) + 32 singleplex
+# Ch<N>_100k_<rep> (4 channels x 8 reps).
+#
+# expected:  integer = assay with that many copies expected
+#            0       = assay, no template (NTC)
+#            null    = NO assay on that channel
+# Every sample must match exactly one rule. Changing sample naming means a
+# new experiment_id and a new annotation file; bump annotation_version for
+# any other edit.
+experiment_id: MP37_V_V_Testcase_2_beta05
+annotation_version: 1
+
+channels: [Ch01, Ch02, Ch03, Ch04]
+
+levels:
+  "0": 0
+  "10": 10
+  "100": 100
+  "1k": 1000
+  "10k": 10000
+  "100k": 100000
+  "1M": 1000000
+  "1p5M": 1500000
+
+rules:
+  - name: fourplex
+    pattern: '(?P<kind>FourPlex)_(?P<level>[0-9a-zA-Z]+)_(?P<rep>[1-9][0-9]*)'
+    group: "FourPlex_{level}"
+    expected: {Ch01: "{level}", Ch02: "{level}", Ch03: "{level}", Ch04: "{level}"}
+
+  - name: singleplex_ch1_100k
+    pattern: 'Ch1_100k_(?P<rep>[1-9][0-9]*)'
+    group: "Ch1_100k"
+    expected: {Ch01: 100000, Ch02: null, Ch03: null, Ch04: null}
+
+  - name: singleplex_ch2_100k
+    pattern: 'Ch2_100k_(?P<rep>[1-9][0-9]*)'
+    group: "Ch2_100k"
+    expected: {Ch01: null, Ch02: 100000, Ch03: null, Ch04: null}
+
+  - name: singleplex_ch3_100k
+    pattern: 'Ch3_100k_(?P<rep>[1-9][0-9]*)'
+    group: "Ch3_100k"
+    expected: {Ch01: null, Ch02: null, Ch03: 100000, Ch04: null}
+
+  - name: singleplex_ch4_100k
+    pattern: 'Ch4_100k_(?P<rep>[1-9][0-9]*)'
+    group: "Ch4_100k"
+    expected: {Ch01: null, Ch02: null, Ch03: null, Ch04: 100000}
