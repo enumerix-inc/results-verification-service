@@ -108,3 +108,12 @@ the `aggregate_results` table, and any aggregate-scope strategy
 deferred until after the data team's philosophy discussion. This ADR's
 overall status is unchanged; only the one piece that turned out to be
 separable and immediately useful was pulled forward.
+
+## Amendment — aggregate scope pulled forward for TES-2869
+
+**Date:** 2026-10-27
+
+The aggregate scope in this ADR is being implemented for the acceptance criteria
+regression test (TES-2869); see ADR-026. One idea here is superseded: grouping by the
+workbook's `GroupName` column. ADR-026 uses a sidecar annotation file with pattern
+rules over `SampleName` instead, so no pipeline input is modified.

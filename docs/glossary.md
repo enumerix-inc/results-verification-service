@@ -49,6 +49,9 @@ A SHA-256 hash of a gold standard CSV file, computed and stored at registration 
 **Listener**
 The entry point of the verification service. Polls the pipeline database at a fixed interval for completed runs. Because the regression machine is isolated, every run detected is by definition a test run — no filtering required.
 
+**Sample annotation**
+A sidecar YAML file, one per experiment_id, that assigns each sample a group, role and expected counts per channel using ordered regex rules over SampleName (ADR-026). Strict: every sample must match exactly one rule. Expected counts: an integer = assay with that many copies, `0` = assay with no template (no-template control), `null` = no assay on that channel. Its SHA-256 and `annotation_version` are recorded with every result. Never written into the workbook's GroupName.
+
 **Orchestrator**
 The central coordinator of the verification service. Loads the manifest, runs the pre-verification gate, delegates per-sample comparisons, hands results to the LLM module, and stores the final report.
 

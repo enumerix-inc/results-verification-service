@@ -8,6 +8,7 @@
 paths:
   manifests_dir:      "F:/RegressionTesting/manifests"  # files named: context_manifest_{run_id}.json
   gold_standards_dir: "F:/RegressionTesting/gold_standards"
+  annotations_dir:    "F:/RegressionTesting/annotations"   # sample annotation files, one per experiment_id (ADR-026)
   workbooks_dir:      "F:/RegressionTesting/workbooks"
   database:           "F:/RegressionTesting/verification.db"
   reports_dir:        "F:/RegressionTesting/reports"
