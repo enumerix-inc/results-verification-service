@@ -103,6 +103,35 @@ Introduced in ADR-016 (comparison registry), superseding the earlier `sample_tol
 | `count_threshold` | number | The cutover point between the two modes. |
 | `columns` | array of strings | Which CSV columns (metrics) to compare. |
 
+**`acceptance_criteria`** — aggregate-scope check of absolute acceptance criteria (ADR-026). Needs no gold standard. Evaluated per channel from the experiment's pipeline output CSV and its sample annotation file (`annotations/<experiment_id>.yaml`). The shape is validated by `src/comparator/acceptance_params.py`. A full example is `entry_point/manifest_template_acceptance.json`.
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | `"acceptance_criteria"` |
+| `annotation` | string | Optional. The experiment_id of the annotation file to use. Defaults to the experiment's own `experiment_id`. |
+| `columns` | object | Channel name -> CSV column holding its counts, e.g. `{"Ch01": "UM-01_CountsPer50ul"}`. Channels are logical (Ch01-Ch04, the keys); the column is named after the dye, which differs by software version (UM-01 from 3.0, Ch01 earlier) and by assay (e.g. Alexa488 for TaqMan), so columns are parameters. This is what lets one criteria set compare assays channel by channel. |
+| `criteria` | array | One object per criterion (below). |
+
+Each criterion:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Unique within the entry, e.g. `"cv_1k"`. Used in results and the report. |
+| `metric` | string | One of `loglog_slope` (linearity exponent n), `geomean_recovery` (linear slope s), `plateau_ratio` (PR), `cv`, `mean_counts` (e.g. NTC). Unknown names are rejected. |
+| `groups` | array of strings | Annotation groups whose samples feed the metric (`loglog_slope` needs at least 2; `plateau_ratio`, `cv` and `mean_counts` exactly 1). A group is a label, so several criteria may use the same samples. |
+| `fit_groups` | array of strings | `plateau_ratio` only: the groups the linear slope s is fitted on. |
+| `channels` | array of strings | Optional subset of the `columns` keys. Default: all channels. |
+| `lower`, `upper` | number | Bounds. At least one is required. Ratios are fractions (0.20 = 20%). |
+| `lower_inclusive`, `upper_inclusive` | boolean | Required whenever the matching bound is given; there is no default. `false` means the bound itself fails. |
+
+Excerpt (the MP37 entry holds eight criteria):
+
+```json
+{"id": "linearity_exponent", "metric": "loglog_slope",
+ "groups": ["FourPlex_1k", "FourPlex_10k", "FourPlex_100k"],
+ "lower": 0.9, "lower_inclusive": false, "upper": 1.1, "upper_inclusive": false}
+```
+
 An experiment's `comparisons` array can contain more than one entry — e.g. a future experiment could run both a `count_tolerance` check on some columns and a different strategy on others.
 
 ---
@@ -159,7 +188,7 @@ An experiment's `comparisons` array can contain more than one entry — e.g. a f
           "tolerance_percent": 10.0,
           "absolute_tolerance": 2,
           "count_threshold": 100,
-          "columns": ["UM-01_only", "UM-01_UM-02", "UM-01_UM-02_UM-03_UM-04"]
+          "columns": ["Ch01_only", "Ch01_Ch02", "Ch01_Ch02_Ch03_Ch04"]
         }
       ]
     }
