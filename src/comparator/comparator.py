@@ -24,7 +24,7 @@ def _failed_aggregate(comparison: dict, reason: str) -> list[dict]:
     """One 'error' row standing in for a whole aggregate comparison that
     could not be set up (missing annotation, missing columns, bad params...)."""
     return [{
-        "criterion_id": None, "group_key": "__ALL__", "channel": None,
+        "criterion_id": None, "test_case": None, "group_key": "__ALL__", "channel": None,
         "metric": comparison["type"], "comparison_type": comparison["type"],
         "actual_value": None, "expected_value": None, "deviation_percent": None,
         "lower_bound": None, "lower_inclusive": None,

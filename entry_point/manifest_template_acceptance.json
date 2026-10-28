@@ -25,6 +25,7 @@
           "criteria": [
             {
               "id": "linearity_exponent",
+              "test_case": "TC1.2",
               "metric": "loglog_slope",
               "groups": [
                 "FourPlex_1k",
@@ -38,6 +39,7 @@
             },
             {
               "id": "linear_slope",
+              "test_case": "TC1.2",
               "metric": "geomean_recovery",
               "groups": [
                 "FourPlex_1k",
@@ -51,6 +53,7 @@
             },
             {
               "id": "plateauing_ratio_1M",
+              "test_case": "TC1.2",
               "metric": "plateau_ratio",
               "groups": [
                 "FourPlex_1M"
@@ -67,6 +70,7 @@
             },
             {
               "id": "cv_1k",
+              "test_case": "TC1.2",
               "metric": "cv",
               "groups": [
                 "FourPlex_1k"
@@ -76,6 +80,7 @@
             },
             {
               "id": "cv_10k",
+              "test_case": "TC1.2",
               "metric": "cv",
               "groups": [
                 "FourPlex_10k"
@@ -85,6 +90,7 @@
             },
             {
               "id": "cv_100k",
+              "test_case": "TC1.2",
               "metric": "cv",
               "groups": [
                 "FourPlex_100k"
@@ -94,6 +100,7 @@
             },
             {
               "id": "cv_1M",
+              "test_case": "TC1.2",
               "metric": "cv",
               "groups": [
                 "FourPlex_1M"
@@ -103,6 +110,7 @@
             },
             {
               "id": "ntc_mean_counts",
+              "test_case": "TC1.2",
               "metric": "mean_counts",
               "groups": [
                 "FourPlex_0"

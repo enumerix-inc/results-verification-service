@@ -156,3 +156,26 @@ adding a new field.
   columns are more flexible and eliminate the PRIMARY_METRIC coupling
 - Store reports as files only, not in DB — rejected because JSON in DB
   enables future programmatic querying and longitudinal report analysis
+
+## Amendment — acceptance report added for TES-2869
+
+**Date:** 2026-10-28
+
+Aggregate-scope results (ADR-021, ADR-026) add three files to `{reports_dir}/{run_id}/`
+when a run has any. The detail and summary CSVs above are unchanged, and a run with
+only gold standard comparisons writes exactly the same files as before.
+
+- `acceptance_report.md` — reviewer-oriented: provenance (pipeline build, annotation
+  version and SHA-256, source file and its SHA-256, a SHA-256 of the manifest entry
+  holding the criteria, channel columns, preprocessing filters), an advisory
+  "all criteria met" line, a criteria-by-channel table (value, verdict, margin to the
+  nearest limit) grouped by `test_case`, and a Problems list for failures and errors.
+- `acceptance_summary.csv` — one row per criterion per channel, with the limits, margin,
+  verdict, number of raw rows used, and provenance columns.
+- `acceptance_observations.csv` — every raw row (sample x channel) with the annotation
+  applied; `used_by` lists the criteria that used the row, so any value can be traced
+  to, and recomputed from, its rows.
+
+The JSON blob in the `reports` table gains an `acceptance` list (the summary rows)
+only when these files are written. Reports stay CSV/Markdown for now; HTML remains
+future work.
