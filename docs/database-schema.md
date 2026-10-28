@@ -125,6 +125,51 @@ One row per sample per experiment result.
 
 ---
 
+### `aggregate_results`
+One row per aggregate-scope check (ADR-021, ADR-026): a metric computed over one or more annotation groups, per channel, judged against absolute limits. Parallel to `sample_results`, which stays one row per sample. Added for TES-2869; existing databases gain the table when `python -m src.main --init` is re-run (the installer does this on upgrade). The schema uses `CREATE TABLE IF NOT EXISTS`, so re-running is safe.
+
+| Column | Type | Description |
+|---|---|---|
+| `aggregate_result_id` | TEXT PK | Surrogate UUID |
+| `result_id` | TEXT FK | References `experiment_results` |
+| `criterion_id` | TEXT (nullable) | The criterion's `id` in the manifest, e.g. `cv_1k`. |
+| `group_key` | TEXT | The group(s) the metric was computed over, joined with `+`; `__ALL__` when ungrouped. |
+| `channel` | TEXT (nullable) | Logical channel, e.g. `Ch01`. |
+| `metric` | TEXT | e.g. `loglog_slope`, `geomean_recovery`, `plateau_ratio`, `cv`, `mean_counts`. |
+| `comparison_type` | TEXT | e.g. `acceptance_criteria`. |
+| `actual_value` | REAL | The computed value. NULL when the check could not be computed. |
+| `expected_value`, `deviation_percent` | REAL (nullable) | For strategies that compare to a target; unused by acceptance criteria. |
+| `lower_bound`, `upper_bound` | REAL (nullable) | The limits the value was judged against (snapshot of the manifest). |
+| `lower_inclusive`, `upper_inclusive` | INTEGER (nullable) | 1 = the bound itself passes, 0 = it fails, NULL = no bound on that side. The model functions read and write these as booleans. |
+| `margin` | REAL (nullable) | Distance to the nearest bound; negative = outside the limits. |
+| `verdict` | TEXT | `"pass"` \| `"fail"` \| `"error"`. `error` = could not be computed (see `notes`). It is allowed from the start because SQLite cannot alter a CHECK later. |
+| `notes` | TEXT (nullable) | Reason for an `error`, or reviewer-facing remarks. |
+| `annotation_version`, `annotation_sha256` | INTEGER, TEXT | Version and SHA-256 of the sample annotation file used. |
+| `source_file_sha256` | TEXT | SHA-256 of the pipeline output CSV evaluated. |
+| `filters` | TEXT | JSON list of the preprocessing filters applied and how many observations each removed. |
+
+---
+
+### `result_observations`
+The pipeline rows an evaluation used: one per sample per channel, with the annotation applied (ADR-026). Stored so every aggregate number can be traced to the counts behind it, and so pipeline outputs sit beside the service's own outputs. Unique on (`result_id`, `sample_name`, `channel`).
+
+| Column | Type | Description |
+|---|---|---|
+| `observation_id` | TEXT PK | Surrogate UUID |
+| `result_id` | TEXT FK | References `experiment_results` |
+| `sample_name`, `sample_id` | TEXT | The workbook sample name and the pipeline's SampleID. |
+| `strip_barcode`, `carousel_position`, `tube_position` | TEXT (nullable) | Where the sample ran. |
+| `channel` | TEXT | Logical channel, e.g. `Ch01`. |
+| `source_column` | TEXT | CSV column the count came from, e.g. `UM-01_CountsPer50ul`. |
+| `count_value` | REAL (nullable) | The count; NULL when the pipeline reported NA or blank. |
+| `group_name` | TEXT | Annotation group, e.g. `FourPlex_1k`. |
+| `role` | TEXT | `standard` or `ntc`. |
+| `expected_count` | REAL (nullable) | Integer = assay with that many copies, `0` = no-template control, NULL = no assay on that channel. Never conflate NULL and 0. |
+| `rule` | TEXT | The annotation rule that matched the sample. |
+| `issues`, `note` | TEXT (nullable) | The pipeline's Issues and Observation columns, for the reviewer. |
+
+---
+
 ### `reports`
 LLM-generated narrative reports. `result_id` is nullable — a null value indicates a run-level summary report rather than a per-experiment report.
 
