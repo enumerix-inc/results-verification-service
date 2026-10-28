@@ -52,6 +52,9 @@ The entry point of the verification service. Polls the pipeline database at a fi
 **Acceptance criteria comparison**
 An aggregate-scope comparison (`type: acceptance_criteria`) in an experiment's `comparisons` list that judges a metric computed over groups of samples (linearity exponent, linear slope, plateauing ratio, CV, NTC mean) against absolute limits instead of a gold standard (ADR-026). Each criterion records its lower/upper bound and whether each bound is inclusive. The release decision stays with a person reading the report.
 
+**Determinism canary**
+A check (`python -m src.validation.canary`) that two stored results of the same experiment from the same IAP build have identical observations and aggregate values. As of IAP v3.0 reanalysis is deterministic within a build, which is what makes a failing acceptance criterion a real failure rather than noise. It is meaningless across builds.
+
 **Sample annotation**
 A sidecar YAML file, one per experiment_id, that assigns each sample a group, role and expected counts per channel using ordered regex rules over SampleName (ADR-026). Strict: every sample must match exactly one rule. Expected counts: an integer = assay with that many copies, `0` = assay with no template (no-template control), `null` = no assay on that channel. Its SHA-256 and `annotation_version` are recorded with every result. Never written into the workbook's GroupName.
 
