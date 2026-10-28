@@ -256,3 +256,22 @@ all fixed the same session:
 - The stable `experiments`/`build_verdict_policy` template is the same
   manifest schema documented in ADR-001 and `docs/manifest-schema.md` —
   no schema changes were needed for this ADR.
+
+## Amendment — acceptance criteria experiment (TES-2869)
+
+**Date:** 2026-10-28
+
+The `template` dispatch input gains a third choice, `acceptance`, which stamps only
+`manifest_template_acceptance.json` (the MP37 acceptance criteria experiment, ADR-026),
+and a boolean `include_acceptance` that adds that experiment to whichever template was
+chosen, so one run (and one manifest) can cover both gold standard and acceptance
+experiments. The stamping script gains a repeatable `--also-template PATH` to merge
+experiments from several templates (ids must be unique; the verdict policy comes from
+`--template`). The default `manifest_template.json` is unchanged, and a dispatch that
+doesn't ask for acceptance stamps exactly what it did before.
+
+Stamping now validates every `acceptance_criteria` entry before writing anything (shape
+via `acceptance_params`, the annotation file is found and loads, the channels match
+the annotation) and refuses to stamp otherwise, so a typo fails in seconds instead of
+after hours of reanalysis. No `evaluators` input is needed: the experiments' own
+`comparisons` select what runs.

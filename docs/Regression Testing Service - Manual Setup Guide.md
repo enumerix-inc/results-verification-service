@@ -107,7 +107,8 @@ The workflow is `.github/workflows/trigger_regression_run.yml`. It must be on th
 | `pipeline_build` | Build identifier recorded in the manifest. |
 | `scenario` | Scenario name recorded in the manifest. |
 | `runner_label` | Routes the job. Defaults to `pcr-regression`. |
-| `template` | `full` (all experiments) or `single` (one experiment, for smoke tests). |
+| `template` | `full` (all experiments), `single` (one experiment, for smoke tests), or `acceptance` (only the MP37 acceptance criteria experiment; needs no gold standard). |
+| `include_acceptance` | `true` adds the acceptance criteria experiment to the chosen template, so one run covers both. Default `false`. |
 | `harness_timeout_minutes` | Cap for the harness step. Defaults to 720. The workflow converts it with `fromJSON(...)` because GitHub passes number inputs as strings. |
 
 **First-run checklist:**

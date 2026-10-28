@@ -43,13 +43,25 @@ on:
           Which manifest template to stamp. "full" runs every experiment in
           manifest_template.json (the real regression run). "single" runs only
           the one experiment in manifest_template_single.json - quick, for
-          smoke-testing the pipeline end to end.
+          smoke-testing the pipeline end to end. "acceptance" runs only the
+          MP37 acceptance criteria experiment (manifest_template_acceptance.json,
+          ADR-026): no gold standard needed, judged on absolute criteria.
         required: false
         type: choice
         options:
           - full
           - single
+          - acceptance
         default: full
+      include_acceptance:
+        description: >-
+          Also add the MP37 acceptance criteria experiment to the chosen
+          template's experiments, so one run covers both the gold standard
+          comparison and the acceptance criteria. Ignored when template is
+          "acceptance".
+        required: false
+        type: boolean
+        default: false
       harness_timeout_minutes:
         description: >-
           Cap, in minutes, on how long the harness step may run. The harness
@@ -85,6 +97,7 @@ jobs:
       PIPELINE_BUILD: ${{ inputs.pipeline_build }}
       SCENARIO: ${{ inputs.scenario }}
       TEMPLATE: ${{ inputs.template }}
+      INCLUDE_ACCEPTANCE: ${{ inputs.include_acceptance }}
 
     steps:
       - name: Checkout results-verification-service
@@ -113,16 +126,21 @@ jobs:
         # The harness only runs Reanalysis (--reanalysis-only, below), so the
         # run type is fixed here rather than being a dispatch input.
         run: |
-          $template = if ($env:TEMPLATE -eq "single") {
-            "entry_point\manifest_template_single.json"
-          } else {
-            "entry_point\manifest_template.json"
+          $template = switch ($env:TEMPLATE) {
+            "single"     { "entry_point\manifest_template_single.json" }
+            "acceptance" { "entry_point\manifest_template_acceptance.json" }
+            default      { "entry_point\manifest_template.json" }
           }
-          & ".venv\Scripts\python.exe" entry_point\stamp_manifest_for_run.py `
-            --pipeline-build "$env:PIPELINE_BUILD" `
-            --scenario "$env:SCENARIO" `
-            --run-type Reanalysis `
-            --template $template
+          $stampArgs = @(
+            "--pipeline-build", "$env:PIPELINE_BUILD",
+            "--scenario", "$env:SCENARIO",
+            "--run-type", "Reanalysis",
+            "--template", $template
+          )
+          if ($env:INCLUDE_ACCEPTANCE -eq "true" -and $env:TEMPLATE -ne "acceptance") {
+            $stampArgs += @("--also-template", "entry_point\manifest_template_acceptance.json")
+          }
+          & ".venv\Scripts\python.exe" entry_point\stamp_manifest_for_run.py @stampArgs
 
       - name: Run the test harness
         id: harness
@@ -207,6 +225,7 @@ jobs:
             Write-Summary "- **pipeline_build:** $env:PIPELINE_BUILD"
             Write-Summary "- **scenario:** $env:SCENARIO"
             Write-Summary "- **template:** $env:TEMPLATE"
+            Write-Summary "- **include_acceptance:** $env:INCLUDE_ACCEPTANCE"
             Write-Summary "- **run_type:** Reanalysis (harness runs with --reanalysis-only)"
             Write-Summary ""
             Write-Summary "The harness process has exited successfully. Verification happens asynchronously — check the verification service for the actual result."
