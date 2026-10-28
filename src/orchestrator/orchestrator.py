@@ -21,7 +21,15 @@ from pathlib import Path
 
 from src.comparator.comparator import compare_experiment
 from src.database.db import get_connection
-from src.database.models import insert_experiment_result, insert_run, insert_sample_result
+from dataclasses import asdict
+
+from src.database.models import (
+    insert_aggregate_result,
+    insert_experiment_result,
+    insert_result_observations,
+    insert_run,
+    insert_sample_result,
+)
 from src.gate.gate import run_gate
 from src.reporter.reporter import (
     determine_experiment_verdict,
@@ -113,8 +121,10 @@ def verify_run(config: dict, run_id: str, manifest: dict,
     experiment_results = []
 
     for experiment in manifest["experiments"]:
-        gate_passed, gate_status = run_gate(conn, experiment["experiment_id"])
+        gate_passed, gate_status = run_gate(
+            conn, experiment["experiment_id"], experiment.get("comparisons"))
         sample_results = []
+        aggregate_results = []
         comparison = None
 
         if gate_passed:
@@ -145,9 +155,11 @@ def verify_run(config: dict, run_id: str, manifest: dict,
                 gate_status = "result_not_found"
             else:
                 comparison = compare_experiment(
-                    conn, experiment, str(result_csvs[0])
+                    conn, experiment, str(result_csvs[0]),
+                    annotations_dir=config["paths"].get("annotations_dir"),
                 )
                 sample_results = comparison["comparison_results"]
+                aggregate_results = comparison["aggregate_results"]
 
         experiment_results.append({
             "experiment_id":  experiment["experiment_id"],
@@ -157,7 +169,8 @@ def verify_run(config: dict, run_id: str, manifest: dict,
             "gate_status":    gate_status,
             "comparison":     comparison,
             "sample_results": sample_results,
-            "verdict":        determine_experiment_verdict(sample_results),
+            "aggregate_results": aggregate_results,
+            "verdict":        determine_experiment_verdict(sample_results + aggregate_results),
         })
 
     run_verdict = determine_run_verdict(experiment_results, policy)
@@ -208,6 +221,18 @@ def verify_run(config: dict, run_id: str, manifest: dict,
                     "verdict":          sr["verdict"],
                     "notes":            sr.get("note"),
                 })
+
+            for ar in exp_result["aggregate_results"]:
+                insert_aggregate_result(conn, {
+                    **ar,
+                    "aggregate_result_id": str(uuid.uuid4()),
+                    "result_id":           result_id,
+                    "notes":               ar.get("note"),
+                })
+            if comparison["observation_set"] is not None:
+                insert_result_observations(
+                    conn, result_id,
+                    [asdict(o) for o in comparison["observation_set"].observations])
 
     write_report(conn, config, run_id, experiment_results, run_verdict)
     conn.close()

@@ -8,6 +8,7 @@ A manifest entry looks like:
     "type": "acceptance_criteria",
     "annotation": "MP37_V_V_Testcase_2_beta05",      # optional, default: the experiment_id
     "columns": {"Ch01": "UM-01_CountsPer50ul", ...},  # channel -> result CSV column
+    "replicates": 8,                                 # optional: required samples per group
     "criteria": [
       {"id": "linearity_exponent", "metric": "loglog_slope",
        "groups": ["FourPlex_1k", "FourPlex_10k", "FourPlex_100k"],
@@ -40,7 +41,7 @@ METRICS = {
     "mean_counts":       (1, 1,    ()),             # e.g. NTC mean
 }
 
-_ENTRY_KEYS = {"type", "annotation", "columns", "criteria"}
+_ENTRY_KEYS = {"type", "annotation", "columns", "replicates", "criteria"}
 _CRITERION_KEYS = {"id", "metric", "groups", "fit_groups", "channels",
                    "lower", "lower_inclusive", "upper", "upper_inclusive"}
 
@@ -85,6 +86,7 @@ class AcceptanceParams:
     annotation: str | None
     columns: dict
     criteria: tuple
+    replicates: int | None = None
 
 
 def _num(x):
@@ -174,6 +176,9 @@ def parse_acceptance_params(entry: dict) -> AcceptanceParams:
             "columns must be a non-empty mapping of channel -> CSV column name")
     if len(set(cols.values())) != len(cols):
         raise AcceptanceParamsError("columns maps two channels to the same CSV column")
+    reps = entry.get("replicates")
+    if reps is not None and (not isinstance(reps, int) or isinstance(reps, bool) or reps < 1):
+        raise AcceptanceParamsError("replicates must be a positive integer")
     raw = entry.get("criteria")
     if not isinstance(raw, list) or not raw:
         raise AcceptanceParamsError("criteria must be a non-empty list")
@@ -182,4 +187,4 @@ def parse_acceptance_params(entry: dict) -> AcceptanceParams:
     dup = sorted({i for i in ids if ids.count(i) > 1})
     if dup:
         raise AcceptanceParamsError(f"duplicate criterion id(s): {dup}")
-    return AcceptanceParams(ann, dict(cols), criteria)
+    return AcceptanceParams(ann, dict(cols), criteria, reps)
