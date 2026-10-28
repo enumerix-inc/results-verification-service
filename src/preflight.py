@@ -10,6 +10,8 @@ warnings because E:/F: may legitimately be attached after install.
 import asyncio
 from pathlib import Path
 
+from src.annotation.annotation import AnnotationError, load_annotation, resolve_annotations_dir
+
 PATH_KEYS = ("manifests_dir", "reports_dir", "results_dir",
              "e_drive_report_data", "database")
 
@@ -27,6 +29,26 @@ def check_paths(config: dict) -> list[tuple[str, str]]:
             results.append(("warn", f"paths.{key}: drive {anchor} not found ({value})"))
         else:
             results.append(("ok", f"paths.{key}: {value}"))
+    return results
+
+
+def check_annotations(config: dict) -> list[tuple[str, str]]:
+    """Sample annotation files (ADR-026): the folder the service will use must
+    exist with at least one file, and every file must load."""
+    folder = resolve_annotations_dir(config.get("paths", {}).get("annotations_dir"))
+    files = sorted(folder.glob("*.yaml")) if folder.is_dir() else []
+    if not files:
+        return [("warn", f"no annotation files in {folder}; acceptance criteria "
+                         f"experiments will fail until one is added")]
+    results = []
+    for path in files:
+        try:
+            ann = load_annotation(path)
+        except (AnnotationError, OSError) as e:
+            results.append(("fail", f"annotation {path.name} does not load: {e}"))
+        else:
+            results.append(("ok", f"annotation {path.name}: experiment {ann.experiment_id}, "
+                                  f"version {ann.annotation_version}"))
     return results
 
 
@@ -50,7 +72,7 @@ def check_database(config: dict, timeout: float = 5.0) -> tuple[str, str]:
 
 def run_preflight(config: dict) -> int:
     """Print every check; return 0 unless a check failed."""
-    results = check_paths(config)
+    results = check_paths(config) + check_annotations(config)
     if config.get("listener", {}).get("use_mock"):
         results.append(("ok", "listener.use_mock is true - database check skipped"))
     else:

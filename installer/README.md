@@ -21,7 +21,9 @@ only. Output lands in `installer\Output\`.
 ## What the installer does
 
 1. Installs to `C:\Program Files\Countable Labs\Regression Service`
-   (`python\`, `service\`, `tools\`). Upgrades replace these folders.
+   (`python\`, `service\`, `tools\`). Upgrades replace these folders. `service\annotations\`
+   holds the sample annotation files (ADR-026); the service uses them unless
+   `paths.annotations_dir` names an existing folder.
 2. Asks for the Postgres connection and the data folders (skipped on upgrade).
 3. Writes `C:\ProgramData\Countable Labs\Regression Service\config\local_config.yaml`
    once, with access limited to SYSTEM and Administrators. It never overwrites an

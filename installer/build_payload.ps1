@@ -10,7 +10,7 @@
 
   Layout produced (and installed under {app}):
     python\     official embeddable Python + site-packages
-    service\    src\, schema\, scripts\, config\config.yaml (defaults only)
+    service\    src\, schema\, scripts\, annotations\, config\config.yaml (defaults only)
     tools\      nssm.exe
 
   Windows PowerShell 5.1 compatible. Keep this file ASCII / BOM-less.
@@ -104,7 +104,7 @@ Invoke-Checked "pip install" {
 # --- 3. Service code -------------------------------------------------------
 $Svc = Join-Path $Payload "service"
 New-Item -ItemType Directory -Force -Path (Join-Path $Svc "config") | Out-Null
-foreach ($dir in @("src", "schema", "scripts")) {
+foreach ($dir in @("src", "schema", "scripts", "annotations")) {
     # robocopy exit codes 0-7 are success; 8+ are failures.
     & robocopy (Join-Path $RepoRoot $dir) (Join-Path $Svc $dir) /E /XD "__pycache__" /XF "*.pyc" /NFL /NDL /NJH /NJS | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "robocopy $dir failed with exit code $LASTEXITCODE" }

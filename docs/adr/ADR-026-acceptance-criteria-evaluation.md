@@ -123,10 +123,33 @@ Facts that shape the design:
 - **LLM inference of annotations at run time.** Deferred. Drafting annotation rules
   with an LLM for human approval is acceptable later; run-time inference is not.
 
+## Implementation status (2026-10-29)
+
+Implemented under TES-2871 to TES-2879: the annotation loader and validator, the
+`acceptance_criteria` comparison params, the metric primitives (validated against the UMA
+workbook), the observation reader, the `aggregate_results` and `result_observations`
+tables, registry scope and the gate change, the acceptance strategy, the reporter
+extension (ADR-017 amendment), stamping and dispatch support (ADR-023 amendment), and
+the validation tools (`src/validation/canary.py`, `src/validation/workbook_check.py`).
+Practical guide and runbook: `docs/acceptance-criteria-testing.md`.
+
+Decisions made while building, beyond the numbered points above:
+
+- One `acceptance_criteria` entry per experiment; it holds a list of criteria, each of
+  which may carry a `test_case` label. Groups are labels, so samples can feed several
+  criteria.
+- A criterion that cannot be computed is recorded with verdict `error` and a reason,
+  never skipped; it counts as a failure for the experiment verdict.
+- Channels are logical names (`Ch01`...); the manifest `columns` map translates them to
+  the CSV's dye-named columns, which differ by software version and assay.
+- The annotation folder: the installer ships `annotations\` inside the service folder;
+  `paths.annotations_dir` overrides it when that folder exists. Preflight checks that
+  the files load.
+
 ## Open items
 
-- Where annotation files are stored on an installed machine (a `paths` entry alongside
-  `gold_standards_dir`, with tracked copies in the repo).
+- (Resolved, see Implementation status) Where annotation files are stored on an
+  installed machine.
 - Whether QA wants sign-off on the metric calculation code (deferred; skeleton first).
 - An imaging-system attribute is not derivable from sample names. Add it only if a
   source is identified.

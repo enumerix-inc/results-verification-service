@@ -319,3 +319,19 @@ def get_result_observations(conn, result_id: str, group_name: str | None = None,
         sql += " AND channel = ?"
         args.append(channel)
     return [dict(r) for r in conn.execute(sql + " ORDER BY rowid", args).fetchall()]
+
+
+def list_experiment_results(conn, experiment_id: str) -> list[dict]:
+    """All results for an experiment, oldest first, with the run's pipeline build
+    and manifest path (for comparing runs, e.g. the determinism canary)."""
+    rows = conn.execute(
+        """
+        SELECT er.result_id, er.run_id, er.experiment_id, er.verdict, er.pre_verify_status,
+               er.verified_at, r.pipeline_build, r.triggered_at
+        FROM experiment_results er JOIN runs r ON r.run_id = er.run_id
+        WHERE er.experiment_id = ?
+        ORDER BY er.verified_at, er.rowid
+        """,
+        (experiment_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
