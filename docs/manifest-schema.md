@@ -110,6 +110,7 @@ Introduced in ADR-016 (comparison registry), superseding the earlier `sample_tol
 | `type` | string | `"acceptance_criteria"` |
 | `annotation` | string | Optional. The experiment_id of the annotation file to use. Defaults to the experiment's own `experiment_id`. |
 | `columns` | object | Channel name -> CSV column holding its counts, e.g. `{"Ch01": "UM-01_CountsPer50ul"}`. Channels are logical (Ch01-Ch04, the keys); the column is named after the dye, which differs by software version (UM-01 from 3.0, Ch01 earlier) and by assay (e.g. Alexa488 for TaqMan), so columns are parameters. This is what lets one criteria set compare assays channel by channel. |
+| `replicates` | integer | Optional. How many samples each group must have per channel (8 for MP37). A group with a different count gives an `error` result for every criterion that uses it. Without it, groups within one criterion must still agree with each other. |
 | `criteria` | array | One object per criterion (below). |
 
 Each criterion:
@@ -131,6 +132,8 @@ Excerpt (the MP37 entry holds eight criteria):
  "groups": ["FourPlex_1k", "FourPlex_10k", "FourPlex_100k"],
  "lower": 0.9, "lower_inclusive": false, "upper": 1.1, "upper_inclusive": false}
 ```
+
+**Scope and evaluation.** `acceptance_criteria` is an aggregate-scope comparison (ADR-021, ADR-026); `count_tolerance` and `hybrid_tolerance` are sample-scope. An experiment whose comparisons are all aggregate-scope needs no registered gold standard; one with any sample-scope comparison still does. A manifest may mix both kinds across experiments, and an experiment may carry both kinds of entry, but at most one `acceptance_criteria` entry (put all criteria in it). Each criterion is evaluated per channel and recorded in `aggregate_results` with the value, limits, margin and provenance; the pipeline rows used are stored in `result_observations`. A criterion that cannot be computed (missing or empty group, wrong replicate count, an NA count, no assay on the channel) is recorded with verdict `error` and a reason, never skipped, and counts as a failure for the experiment verdict. If the annotation or the columns cannot be loaded at all, a single `error` row records why. The annotation is looked up as `<annotations_dir>/<annotation or experiment_id>.yaml`, where `annotations_dir` is `paths.annotations_dir` in the config when that folder exists, else the repo's `annotations/` folder.
 
 An experiment's `comparisons` array can contain more than one entry — e.g. a future experiment could run both a `count_tolerance` check on some columns and a different strategy on others.
 

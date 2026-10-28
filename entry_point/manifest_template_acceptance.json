@@ -21,6 +21,7 @@
             "Ch03": "UM-03_CountsPer50ul",
             "Ch04": "UM-04_CountsPer50ul"
           },
+          "replicates": 8,
           "criteria": [
             {
               "id": "linearity_exponent",

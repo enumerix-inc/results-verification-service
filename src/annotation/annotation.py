@@ -182,6 +182,17 @@ def load_annotation(path) -> Annotation:
     return ann
 
 
+REPO_ANNOTATIONS_DIR = Path(__file__).resolve().parents[2] / "annotations"
+
+
+def resolve_annotations_dir(configured=None) -> Path:
+    """paths.annotations_dir from config when that folder exists, else the
+    repo's own annotations/ folder."""
+    if configured and Path(configured).is_dir():
+        return Path(configured)
+    return REPO_ANNOTATIONS_DIR
+
+
 def find_annotation(annotations_dir, experiment_id: str) -> Path:
     """Locate <annotations_dir>/<experiment_id>.yaml and check it declares that id."""
     path = Path(annotations_dir) / f"{experiment_id}.yaml"

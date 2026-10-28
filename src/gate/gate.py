@@ -11,6 +11,7 @@ If either check fails the run is aborted and no comparison runs.
 Entry point: run_gate()
 """
 
+from src.comparator.registry import AGGREGATE, comparison_scope
 from src.database.models import get_active_gs_version
 from src.registration.registrar import compute_checksum
 
@@ -30,7 +31,7 @@ def subset_check(workbook_sample_ids: list[str],
     pass
 
 
-def run_gate(conn, experiment_id: str) -> tuple[bool, str]:
+def run_gate(conn, experiment_id: str, comparisons: list | None = None) -> tuple[bool, str]:
     """
     Run the pre-verification gate for one experiment.
 
@@ -44,7 +45,15 @@ def run_gate(conn, experiment_id: str) -> tuple[bool, str]:
     Note: checksum_check() remains in this module for potential
     use in a future re-registration workflow but is not called
     here. Subset validity check is Phase 3.
+
+    comparisons — the experiment's manifest comparison entries. When given
+    and EVERY one is aggregate-scope (ADR-021/026), no gold standard is
+    needed and the gate passes. Any sample-scope or unknown type keeps the
+    gold standard requirement.
     """
+    if comparisons and all(comparison_scope(c.get("type")) == AGGREGATE
+                           for c in comparisons):
+        return (True, "pass")
     active = get_active_gs_version(conn, experiment_id)
     if active is None:
         return (False, "no_gold_standard")
