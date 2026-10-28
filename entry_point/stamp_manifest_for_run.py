@@ -13,7 +13,17 @@ entry point) and ADR-023 (GitHub Actions trigger).
 
 Usage:
     python stamp_manifest_for_run.py --pipeline-build "3.0.0.2977" \\
-        [--scenario new_build_regression_baseline] [--run-type Reanalysis]
+        [--scenario new_build_regression_baseline] [--run-type Reanalysis] \\
+        [--template PATH] [--also-template PATH ...]
+
+--also-template adds the experiments of further templates to the stamped
+manifest (e.g. the acceptance criteria experiment, manifest_template_acceptance.json,
+alongside the gold standard experiments). Experiment ids must be unique across
+the templates. The build_verdict_policy comes from --template.
+
+Before anything is written, acceptance_criteria entries are validated (shape,
+annotation file found and loadable, channels match the annotation), so a typo
+fails here in seconds instead of after hours of reanalysis.
 
 Run standalone (no GitHub Actions) for a manual/local stamp — it only
 needs pyyaml, not the full service's runtime dependencies.
@@ -28,6 +38,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
+
+# Standalone imports from the repo (stdlib + pyyaml only; no service runtime deps).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.annotation.annotation import (AnnotationError, find_annotation,  # noqa: E402
+                                       load_annotation, resolve_annotations_dir)
+from src.comparator.acceptance_params import (AcceptanceParamsError,  # noqa: E402
+                                              parse_acceptance_params)
 
 RUN_ID_RE = re.compile(r"^context_manifest_run_(\d{8})_(\d{3})\.json$")
 
@@ -46,6 +63,43 @@ def load_config() -> dict:
     config_path = local if local.exists() else default
     with open(config_path) as f:
         return yaml.safe_load(f)
+
+
+def merge_experiments(templates: list[tuple[str, dict]]) -> list[dict]:
+    """Concatenate the experiments of several templates; ids must be unique."""
+    experiments, seen = [], {}
+    for name, template in templates:
+        for exp in template["experiments"]:
+            eid = exp["experiment_id"]
+            if eid in seen:
+                raise ValueError(f"experiment '{eid}' appears in both {seen[eid]} and {name}")
+            seen[eid] = name
+            experiments.append(exp)
+    return experiments
+
+
+def validate_acceptance_experiments(experiments: list[dict], annotations_dir=None) -> list[str]:
+    """Return a list of problems with any acceptance_criteria entries (empty = ok)."""
+    problems = []
+    for exp in experiments:
+        entries = [c for c in exp.get("comparisons", []) if c.get("type") == "acceptance_criteria"]
+        if len(entries) > 1:
+            problems.append(f"{exp['experiment_id']}: more than one acceptance_criteria entry; "
+                            f"put all criteria in one entry")
+        for entry in entries:
+            where = f"{exp['experiment_id']}"
+            try:
+                params = parse_acceptance_params(entry)
+                annotation = load_annotation(find_annotation(
+                    resolve_annotations_dir(annotations_dir),
+                    params.annotation or exp["experiment_id"]))
+            except (AcceptanceParamsError, AnnotationError, FileNotFoundError) as e:
+                problems.append(f"{where}: {e}")
+                continue
+            if set(params.columns) != set(annotation.channels):
+                problems.append(f"{where}: columns {sorted(params.columns)} do not match the "
+                                f"annotation's channels {sorted(annotation.channels)}")
+    return problems
 
 
 def compute_triggered_by() -> str:
@@ -98,6 +152,10 @@ def main() -> int:
     parser.add_argument("--template",
                          default=str(Path(__file__).parent / "manifest_template.json"),
                          help="Path to the stable manifest template.")
+    parser.add_argument("--also-template", action="append", default=[],
+                         help="Path to another template whose experiments are added "
+                              "to the manifest (repeatable), e.g. "
+                              "manifest_template_acceptance.json.")
     parser.add_argument("--triggered-by", default=None,
                          help="Override the computed triggered_by value.")
     args = parser.parse_args()
@@ -136,11 +194,25 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    today = datetime.now().strftime("%Y%m%d")
-    run_id = next_run_id(manifests_dir, today)
-
     template_path = Path(args.template)
     template = json.loads(template_path.read_text())
+    try:
+        experiments = merge_experiments(
+            [(template_path.name, template)]
+            + [(Path(p).name, json.loads(Path(p).read_text())) for p in args.also_template])
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    problems = validate_acceptance_experiments(experiments, config["paths"].get("annotations_dir"))
+    if problems:
+        print("Error: refusing to stamp - the acceptance criteria entries are invalid:",
+              file=sys.stderr)
+        for p in problems:
+            print(f"  {p}", file=sys.stderr)
+        return 1
+
+    today = datetime.now().strftime("%Y%m%d")
+    run_id = next_run_id(manifests_dir, today)
 
     manifest = {
         "run": {
@@ -152,7 +224,7 @@ def main() -> int:
             "run_type": args.run_type,
         },
         "build_verdict_policy": template["build_verdict_policy"],
-        "experiments": template["experiments"],
+        "experiments": experiments,
     }
 
     manifest_path = manifests_dir / f"context_manifest_{run_id}.json"
