@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src.database.models import insert_report
+from src.reporter.acceptance_report import write_acceptance_report
 
 
 def determine_experiment_verdict(sample_results: list[dict]) -> str:
@@ -64,7 +65,8 @@ def determine_run_verdict(experiment_results: list[dict],
 
 
 def write_report(conn, config: dict, run_id: str,
-                 experiment_results: list[dict], run_verdict: str) -> None:
+                 experiment_results: list[dict], run_verdict: str,
+                 run_info: dict | None = None) -> None:
     """
     Write the detail CSV, summary CSV, and report DB record for a completed run.
 
@@ -74,6 +76,11 @@ def write_report(conn, config: dict, run_id: str,
       verdict        : str
       comparisons    : list of manifest comparison entries (for criteria lookup)
       sample_results : list of per-(sample, metric) result dicts from the comparator
+      aggregate_results : (optional) per-(criterion, channel) dicts from aggregate-scope
+                          comparisons; when present they also produce the acceptance
+                          report files (see acceptance_report.py)
+
+    run_info — optional {"pipeline_build", "scenario"} shown in the acceptance report.
 
     CSVs are written to {reports_dir}/{run_id}/.
     The JSON blob (detail + summary) is stored in the reports table.
@@ -167,6 +174,10 @@ def write_report(conn, config: dict, run_id: str,
         "detail":  detail_rows,
         "summary": summary_rows,
     }
+
+    acceptance_rows = write_acceptance_report(reports_dir, run_id, experiment_results, run_info)
+    if acceptance_rows:
+        report_blob["acceptance"] = acceptance_rows
 
     with conn:
         insert_report(conn, {

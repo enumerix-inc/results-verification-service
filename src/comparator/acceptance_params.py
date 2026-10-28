@@ -11,6 +11,7 @@ A manifest entry looks like:
     "replicates": 8,                                 # optional: required samples per group
     "criteria": [
       {"id": "linearity_exponent", "metric": "loglog_slope",
+       "test_case": "TC1.2",                           # optional label for reports
        "groups": ["FourPlex_1k", "FourPlex_10k", "FourPlex_100k"],
        "lower": 0.9, "lower_inclusive": false,
        "upper": 1.1, "upper_inclusive": false},
@@ -42,7 +43,7 @@ METRICS = {
 }
 
 _ENTRY_KEYS = {"type", "annotation", "columns", "replicates", "criteria"}
-_CRITERION_KEYS = {"id", "metric", "groups", "fit_groups", "channels",
+_CRITERION_KEYS = {"id", "metric", "groups", "fit_groups", "channels", "test_case",
                    "lower", "lower_inclusive", "upper", "upper_inclusive"}
 
 
@@ -61,6 +62,7 @@ class Criterion:
     lower_inclusive: bool | None
     upper: float | None
     upper_inclusive: bool | None
+    test_case: str | None = None     # label for reports, e.g. "TC1.2"
 
     def passes(self, value: float) -> bool:
         if self.lower is not None and not (
@@ -134,6 +136,10 @@ def _parse_criterion(i, c, channels) -> Criterion:
         if missing:
             raise AcceptanceParamsError(f"{where}: channels {missing} are not in 'columns'")
 
+    test_case = c.get("test_case")
+    if test_case is not None and (not isinstance(test_case, str) or not test_case.strip()):
+        raise AcceptanceParamsError(f"{where}: test_case must be a non-empty string")
+
     bounds = {}
     for side in ("lower", "upper"):
         val, flag = c.get(side), c.get(f"{side}_inclusive")
@@ -153,7 +159,7 @@ def _parse_criterion(i, c, channels) -> Criterion:
         raise AcceptanceParamsError(f"{where}: needs at least one of 'lower' or 'upper'")
     if lv is not None and uv is not None and (lv > uv or (lv == uv and not (lf and uf))):
         raise AcceptanceParamsError(f"{where}: bounds leave no passing values")
-    return Criterion(cid, metric, groups, fit, chans, lv, lf, uv, uf)
+    return Criterion(cid, metric, groups, fit, chans, lv, lf, uv, uf, test_case)
 
 
 def parse_acceptance_params(entry: dict) -> AcceptanceParams:

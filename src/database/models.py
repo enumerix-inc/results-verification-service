@@ -193,7 +193,7 @@ def insert_report(conn, record: dict) -> None:
 # ---------------------------------------------------------------
 
 _AGGREGATE_COLUMNS = (
-    "aggregate_result_id", "result_id", "criterion_id", "group_key", "channel",
+    "aggregate_result_id", "result_id", "criterion_id", "test_case", "group_key", "channel",
     "metric", "comparison_type", "actual_value", "expected_value",
     "deviation_percent", "lower_bound", "lower_inclusive", "upper_bound",
     "upper_inclusive", "margin", "verdict", "notes", "annotation_version",

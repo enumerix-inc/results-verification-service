@@ -121,6 +121,7 @@ Each criterion:
 | `metric` | string | One of `loglog_slope` (linearity exponent n), `geomean_recovery` (linear slope s), `plateau_ratio` (PR), `cv`, `mean_counts` (e.g. NTC). Unknown names are rejected. |
 | `groups` | array of strings | Annotation groups whose samples feed the metric (`loglog_slope` needs at least 2; `plateau_ratio`, `cv` and `mean_counts` exactly 1). A group is a label, so several criteria may use the same samples. |
 | `fit_groups` | array of strings | `plateau_ratio` only: the groups the linear slope s is fitted on. |
+| `test_case` | string | Optional label, e.g. `"TC1.2"`. Groups criteria by V&V test case in the report and is stored in `aggregate_results.test_case`. |
 | `channels` | array of strings | Optional subset of the `columns` keys. Default: all channels. |
 | `lower`, `upper` | number | Bounds. At least one is required. Ratios are fractions (0.20 = 20%). |
 | `lower_inclusive`, `upper_inclusive` | boolean | Required whenever the matching bound is given; there is no default. `false` means the bound itself fails. |

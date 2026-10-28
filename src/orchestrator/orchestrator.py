@@ -234,6 +234,8 @@ def verify_run(config: dict, run_id: str, manifest: dict,
                     conn, result_id,
                     [asdict(o) for o in comparison["observation_set"].observations])
 
-    write_report(conn, config, run_id, experiment_results, run_verdict)
+    write_report(conn, config, run_id, experiment_results, run_verdict,
+                 run_info={"pipeline_build": manifest["run"]["pipeline_build"],
+                           "scenario": manifest["run"]["scenario"]})
     conn.close()
     print(f"Run {run_id} complete — verdict: {run_verdict}")

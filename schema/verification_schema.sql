@@ -189,6 +189,7 @@ CREATE TABLE IF NOT EXISTS aggregate_results (
     result_id           TEXT    NOT NULL
         REFERENCES experiment_results (result_id),
     criterion_id        TEXT    DEFAULT NULL,   -- id of the criterion in the manifest, e.g. cv_1k
+    test_case           TEXT    DEFAULT NULL,   -- label from the manifest, e.g. TC1.2
     group_key           TEXT    NOT NULL,       -- group(s) the metric was computed over; '__ALL__' when ungrouped
     channel             TEXT    DEFAULT NULL,   -- e.g. Ch01; NULL when the check is not per channel
     metric              TEXT    NOT NULL,       -- e.g. loglog_slope, cv

@@ -111,6 +111,7 @@ def run_acceptance_criteria(observation_set, comparison: dict) -> list[dict]:
                 note = str(e)
             results.append({
                 "criterion_id":       c.id,
+                "test_case":          c.test_case,
                 "group_key":          "+".join(c.groups),
                 "channel":            channel,
                 "metric":             c.metric,
