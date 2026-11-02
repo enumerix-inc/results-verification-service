@@ -44,11 +44,13 @@ design and its `entry_point/stamp_manifest_for_run.py` --help for the
 same script run locally/manually.
 
 Requires a self-hosted GitHub Actions runner registered on the regression
-machine (labels `self-hosted, pcr-regression`) and two repository
-variables set (Settings → Secrets and variables → Actions → Variables):
-`PCR_MANIFESTS_DIR` (matching `config.paths.manifests_dir` on that
-machine) and `PCR_TEST_HARNESS_EXE_PATH` (where the built test harness
-executable lives there).
+machine (labels `self-hosted, pcr-regression`) and repository
+variable `PCR_MANIFESTS_DIR` set (Settings → Secrets and variables →
+Actions → Variables), matching `config.paths.manifests_dir` on that
+machine. The test harness ships in the Countable PCR install folder and
+is used from there by default; `PCR_TEST_HARNESS_EXE_PATH` is an optional
+override, and the workflow fails if the harness version differs from the
+installed app.
 
 ## Data directory
 

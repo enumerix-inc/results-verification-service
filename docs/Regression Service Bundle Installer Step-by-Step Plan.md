@@ -63,16 +63,16 @@ The harness reads `./Config/DataLogger/...` relative to the current directory, w
 
 ## Phase 2: Ship the harness in the main bundle (about 1 to 2 days, Countable.PCR repo)
 
-The harness is already built Release by `dotnet build` on the solution, so this phase only packages it. It becomes an optional feature of the App MSI, so customer installs do not get it.
+The harness is already built Release by `dotnet build` on the solution, so this phase only packages it. Decision (2026-11-02): it always installs with the app, into the app folder, so its version always matches. Teammates confirmed test code on customer machines is acceptable.
 
-1. **Add a component group.** In `src/Countable.Pcr.App.Installer/Component.wxs`, add a `TestHarnessComponentGroup` that harvests the harness's Release output into `INSTALLFOLDER\TestHarness\`. Use a subfolder so its DLLs and `appsettings.json` never collide with the app's. Leave out the Stubs config.
-2. **Add an optional feature.** In `Package.wxs`, add a second `<Feature Id="TestHarness">` with a level above the default install level, so a normal install skips it. Regression machines opt in with `msiexec /i ... ADDLOCAL=CountablePCR,TestHarness`.
+1. **Stage and add the harness-only files.** A `StageHarnessFiles` target in the installer `.wixproj` copies harness output files that the app output lacks (12 files, about 3 MB) into `obj\harness-only`, and `Component.wxs` adds a `HarnessComponentGroup` harvesting that folder into `INSTALLFOLDER`. A full subfolder copy was tried first and added 200 MB of duplicate DLLs. The harness's own `appsettings.json` is excluded by the same rule, so it never overwrites the app's.
+2. **Add it to the existing feature.** In `Package.wxs`, add the component group to the `CountablePCR` feature. No optional feature is needed.
 3. **Sign it.** Add an eSigner step in `Build_Official_Release.yml` for `Countable.Pcr.TestHarness.exe`, before the installer builds, as is done for the other executables.
 4. **Mirror it in the unofficial workflow.** Check `Build_Unofficial_Release.yml` for the same build and sign steps.
 5. **Build a test MSI.** Run the workflow and download the MSI artifact.
-6. **Install on a clean VM.** Run the MSI once normally and once with `ADDLOCAL=CountablePCR,TestHarness`. Confirm the harness exists only in the second case.
+6. **Install and upgrade.** Install the MSI, confirm the harness exe is in the app folder and starts, then upgrade over an older version (higher `AssemblyVersion`) and uninstall.
 
-**Checkpoint 2:** the harness installs by itself from the new MSI into `...\Countable Control Software\TestHarness\`, is signed, and a Reanalysis run works from that location. The path `C:\Program Files\Countable Labs\Countable Control Software\TestHarness\Countable.Pcr.TestHarness.exe` is now the stable harness location.
+**Checkpoint 2:** the harness installs by itself from the new MSI into the app folder, is signed, and a Reanalysis run works from that location. The path `C:\Program Files\Countable Labs\Countable Control Software\Countable.Pcr.TestHarness.exe` is now the stable harness location, and the workflow uses it by default.
 
 ## Phase 3: Make the verification service installable (about 3 to 4 days, this repo)
 

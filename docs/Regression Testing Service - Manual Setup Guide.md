@@ -35,7 +35,7 @@ The most common failure is a version mismatch, so settle that first.
 | Account | Administrator. The harness has a `requireAdministrator` manifest and restarts `CountableAnalysisService`. |
 | Drives | E: and F: visible to the account running the service and the runner. E: holds `CountableLabs\ReportData`; F: is the archive and holds `RegressionTesting\`. |
 | Python | 3.10 or later, with `pip`. |
-| PowerShell 7 | `pwsh -v` must work, because the workflow steps use `shell: pwsh`. Install with `winget install Microsoft.PowerShell` if missing. |
+| PowerShell 7 | `pwsh -v` must work, because the workflow steps use `shell: pwsh`. Install the **MSI** build (`winget install Microsoft.PowerShell --installer-type wix`, or the .msi from GitHub) so it lands at `C:\Program Files\PowerShell\7\pwsh.exe`. The default winget/Store build is an MSIX package whose `WindowsApps` alias fails with "Access is denied" under a service account, so the runner service cannot use it. Restart the runner service after installing. |
 | NSSM | `nssm.exe` (the win64 build) in a permanent folder such as `C:\Tools\nssm\`. The service calls it from there, so do not leave it in Downloads. It does not need to be on PATH if you pass `-NssmPath`. |
 | Countable PCR | The installed app, the Postgres database, `CountableAnalysisService`, and the Report Loader, all from one version. |
 | GitHub access | Permission to add a self-hosted runner to the results-verification-service repo and to set repository variables. |
@@ -62,13 +62,13 @@ What happens without a gold standard: the harness still runs the experiment, but
 
 ## Part 2: Test harness and installed app
 
-Until the harness ships inside the Countable.PCR MSI (Phase 2), it is built separately and pointed at by a path variable.
+The test harness ships inside the Countable PCR MSI, in the app install folder, so its version always matches the installed app. Nothing is built or copied separately.
 
-1. **Install the Countable PCR bundle** for the target version, with its Postgres database, `CountableAnalysisService`, and Report Loader. The default install folder is `C:\Program Files\Countable Labs\Countable Control Software`.
-2. **Build the harness from the matching branch** of the Countable.PCR repo (`Countable.Pcr.TestHarness`). If the restore fails with NU1902 or NU1903 audit errors, a new package advisory is being treated as an error. The one-time workaround is `-p:NuGetAudit=false` on the build command. The real fix is updating the vulnerable package, such as `System.Security.Cryptography.Pkcs`.
+1. **Install the Countable PCR bundle** for the target version (v3.1 or later, built from a branch that includes the harness), with its Postgres database, `CountableAnalysisService`, and Report Loader. The default install folder is `C:\Program Files\Countable Labs\Countable Control Software`, and `Countable.Pcr.TestHarness.exe` is installed there next to the app exe.
+2. **Older builds without the harness (development only).** Build `Countable.Pcr.TestHarness` from the matching branch of the Countable.PCR repo and set the `PCR_TEST_HARNESS_EXE_PATH` repo variable to it. The workflow's version check fails if that harness does not match the installed app. If the restore fails with NU1902 or NU1903 audit errors, a new package advisory is being treated as an error. The one-time workaround is `-p:NuGetAudit=false` on the build command; the real fix is updating the vulnerable package, such as `System.Security.Cryptography.Pkcs`.
 3. **Confirm the harness has the reanalysis changes:** the `--reanalysis-only` flag, and `ImageFormat` detection. Reanalysis fails with `ImageFormat is null` without it. The harness picks `jxl` or `tiff` by scanning the sample folders (named `barcode_tubeposition_samplename`) for exactly channels times scan count images, the same rule the app uses.
 4. **Set the manifest folder** in the machine environment variable `COUNTABLE_PCR_REGRESSION_TEST_MANIFEST_PATH`. It must point at the same folder as `paths.manifests_dir` in the service config. The workflow also sets it per run.
-5. **Test by hand before using the workflow.** From an elevated prompt, set the working directory to the app install folder and run `<harness.exe> --reanalysis-only`. The working directory matters because the harness resolves `./Config/...` and `appsettings.json` against it.
+5. **Test by hand before using the workflow.** From an elevated prompt, set the working directory to the app install folder and run `.\Countable.Pcr.TestHarness.exe --reanalysis-only`. The working directory matters because the harness resolves `./Config/...` and `appsettings.json` against it.
 
 The harness needs the manifest to exist first. A single experiment takes about 47 minutes, so use the single-experiment template (`entry_point/manifest_template_single.json`) for first runs.
 
@@ -97,7 +97,7 @@ The workflow is `.github/workflows/trigger_regression_run.yml`. It must be on th
 | Variable | Value |
 | --- | --- |
 | `PCR_MANIFESTS_DIR` | The manifests folder, same as `paths.manifests_dir`. |
-| `PCR_TEST_HARNESS_EXE_PATH` | Full path to the built `Countable.Pcr.TestHarness.exe`. |
+| `PCR_TEST_HARNESS_EXE_PATH` | Optional override. Leave it unset to use `Countable.Pcr.TestHarness.exe` in the app install folder. If set, the harness must match the installed app version or the run fails the version check. |
 | `PCR_APP_INSTALL_DIR` | The installed app folder. Defaults to `C:\Program Files\Countable Labs\Countable Control Software` if unset. |
 
 **Dispatch inputs:**
@@ -116,7 +116,7 @@ The workflow is `.github/workflows/trigger_regression_run.yml`. It must be on th
 1. The service is Running, and a gold standard is registered for each experiment in the template.
 2. The manifests folder holds no stale `context_manifest_*.json` files.
 3. The runner shows Idle, with the right label.
-4. `pwsh -v` works for the runner's service account.
+4. `pwsh -v` works for the runner's service account, and `PCR_TEST_HARNESS_EXE_PATH` is unset (or points at a matching harness).
 5. Dispatch with `template: single`. Expect the run to stay Queued until the runner picks it up, then about 47 minutes for the harness.
 6. Check the service log for "Manifest registered", then "experiments confirmed on F:", then "starting verification". The reports land under `paths.reports_dir`.
 
