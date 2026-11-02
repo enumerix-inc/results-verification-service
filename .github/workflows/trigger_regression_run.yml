@@ -151,7 +151,9 @@ jobs:
         # machine. Set these repo variables once in
         # Settings -> Secrets and variables -> Actions -> Variables:
         #   PCR_MANIFESTS_DIR          the manifests folder (as above)
-        #   PCR_TEST_HARNESS_EXE_PATH  full path to Countable.Pcr.TestHarness.exe
+        #   PCR_TEST_HARNESS_EXE_PATH  optional override; defaults to
+        #     Countable.Pcr.TestHarness.exe in the app install folder (the
+        #     Countable PCR installer puts the harness there, TES-2910)
         #   PCR_APP_INSTALL_DIR        optional; defaults to
         #     C:\Program Files\Countable Labs\Countable Control Software
         #
@@ -172,16 +174,30 @@ jobs:
         timeout-minutes: ${{ fromJSON(inputs.harness_timeout_minutes) }}
         env:
           COUNTABLE_PCR_REGRESSION_TEST_MANIFEST_PATH: ${{ vars.PCR_MANIFESTS_DIR }}
-          HARNESS_EXE: ${{ vars.PCR_TEST_HARNESS_EXE_PATH }}
+          HARNESS_EXE: ${{ vars.PCR_TEST_HARNESS_EXE_PATH }}  # optional override
           APP_DIR: ${{ vars.PCR_APP_INSTALL_DIR }}
         run: |
-          if (-not $env:HARNESS_EXE) {
-            Write-Error "Repo variable PCR_TEST_HARNESS_EXE_PATH is not set."
+          $appDir = if ($env:APP_DIR) { $env:APP_DIR } else { "C:\Program Files\Countable Labs\Countable Control Software" }
+          $harnessExe = if ($env:HARNESS_EXE) { $env:HARNESS_EXE } else { Join-Path $appDir "Countable.Pcr.TestHarness.exe" }
+          if (-not (Test-Path -LiteralPath $harnessExe)) {
+            Write-Error "Test harness not found at $harnessExe. Install a Countable PCR build that includes the harness, or set PCR_TEST_HARNESS_EXE_PATH."
             exit 1
           }
-          $appDir = if ($env:APP_DIR) { $env:APP_DIR } else { "C:\Program Files\Countable Labs\Countable Control Software" }
+          # The harness must be the same build as the installed app. When it ships
+          # in the app folder it always is; a mismatch means an override path or a
+          # hand-copied harness, which is the v3.0.1-style incompatibility.
+          $appExe = Join-Path $appDir "Countable.Pcr.App.exe"
+          if (Test-Path -LiteralPath $appExe) {
+            $harnessVer = (Get-Item -LiteralPath $harnessExe).VersionInfo.FileVersion
+            $appVer = (Get-Item -LiteralPath $appExe).VersionInfo.FileVersion
+            Write-Host "Harness version: $harnessVer; installed app version: $appVer"
+            if ($harnessVer -ne $appVer) {
+              Write-Error "Harness version ($harnessVer) does not match the installed app ($appVer). Use the harness that ships with the installed app."
+              exit 1
+            }
+          }
           Set-Location -LiteralPath $appDir
-          & $env:HARNESS_EXE --reanalysis-only
+          & $harnessExe --reanalysis-only
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Test harness exited with code $LASTEXITCODE"
             exit $LASTEXITCODE

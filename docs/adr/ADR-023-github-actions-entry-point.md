@@ -174,6 +174,11 @@ and `.venv` on every single run. The checkout step explicitly sets
   `PCR_MANIFESTS_DIR` (must match `config.paths.manifests_dir`) and
   `PCR_TEST_HARNESS_EXE_PATH` (wherever the built harness executable
   actually lives on the regression machine).
+  *Update (TES-2910):* the harness now ships in the Countable PCR MSI,
+  installed in the app folder. `PCR_TEST_HARNESS_EXE_PATH` is optional and
+  defaults to `Countable.Pcr.TestHarness.exe` in the app install folder,
+  and the workflow fails if the harness file version differs from the
+  installed app's.
 - Triggering a run now requires a self-hosted runner to be registered
   and online on the regression machine — a one-time setup step, not yet
   performed as of this ADR.
