@@ -45,6 +45,7 @@ from src.annotation.annotation import (AnnotationError, find_annotation,  # noqa
                                        load_annotation, resolve_annotations_dir)
 from src.comparator.acceptance_params import (AcceptanceParamsError,  # noqa: E402
                                               parse_acceptance_params)
+from src.panels import validate_panels  # noqa: E402
 
 RUN_ID_RE = re.compile(r"^context_manifest_run_(\d{8})_(\d{3})\.json$")
 
@@ -204,8 +205,9 @@ def main() -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
     problems = validate_acceptance_experiments(experiments, config["paths"].get("annotations_dir"))
+    problems += validate_panels(experiments)
     if problems:
-        print("Error: refusing to stamp - the acceptance criteria entries are invalid:",
+        print("Error: refusing to stamp - invalid manifest entries:",
               file=sys.stderr)
         for p in problems:
             print(f"  {p}", file=sys.stderr)

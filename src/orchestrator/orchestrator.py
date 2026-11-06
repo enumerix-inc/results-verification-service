@@ -31,6 +31,7 @@ from src.database.models import (
     insert_sample_result,
 )
 from src.gate.gate import run_gate
+from src.panels import expand_panels
 from src.reporter.reporter import (
     determine_experiment_verdict,
     determine_run_verdict,
@@ -46,7 +47,7 @@ def load_manifest(run_id: str, config: dict) -> dict:
             f"Manifest not found for run '{run_id}': expected at {path}"
         )
     with open(path) as f:
-        return json.load(f)
+        return expand_panels(json.load(f))
 
 
 def find_result_folder(name: str, config: dict) -> Path:
