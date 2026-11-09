@@ -210,3 +210,33 @@ An experiment's `comparisons` array can contain more than one entry — e.g. a f
 | `dynamic_range` (e.g. `JS221N_serial_titration_PSF`) | Really a whole-experiment trend/curve property (linearity, %CV), not a per-sample check. `hybrid_tolerance` in use as a near-term stand-in. See ADR-021. |
 | `10_channel` | Per-channel breakdown criteria still TBD — no registered experiment yet. |
 | All experiments | `pipeline_build` is filled in manually for now; pulling it from the build process automatically is a future improvement. |
+
+## Dual-panel assays (`panels`)
+
+Some assays (KMT2A) are one workbook with a panel per sample. The app splits it
+automatically into one experiment per panel, named `{experiment_id}_{panel_name}`,
+so one replay produces two notifications and two reports. The manifest keeps ONE
+entry (the harness replays the workbook once) and declares the panels:
+
+```json
+{
+  "experiment_id": "KMT2A_E2E",
+  "image_source": "...", "sample_workbook": "...",
+  "comparisons": [ ... ],
+  "panels": {
+    "<panel name as in the workbook>": { "comparisons": [ ... ] },
+    "<other panel name>": {}
+  }
+}
+```
+
+The service expands the entry once when it loads the manifest (`src/panels.py`)
+into one ordinary experiment per panel with id `{experiment_id}_{panel_name}`,
+plus `panel` and `parent_experiment_id` fields. Each panel experiment has its own
+gold standard (register it under the expanded id), gate, comparison and report,
+and the run is ready when every panel has reported. A panel may override
+`comparisons`, `result_file_suffix` and `classification`;
+anything else is inherited from the entry. `{}`
+inherits everything, and every panel must end up with `comparisons` (a non-empty list of objects with a `type`). The manifest
+file on disk is not modified, and the harness ignores `panels`. The stamping
+script validates the declaration before writing a manifest.
