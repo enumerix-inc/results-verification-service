@@ -210,3 +210,50 @@ An experiment's `comparisons` array can contain more than one entry — e.g. a f
 | `dynamic_range` (e.g. `JS221N_serial_titration_PSF`) | Really a whole-experiment trend/curve property (linearity, %CV), not a per-sample check. `hybrid_tolerance` in use as a near-term stand-in. See ADR-021. |
 | `10_channel` | Per-channel breakdown criteria still TBD — no registered experiment yet. |
 | All experiments | `pipeline_build` is filled in manually for now; pulling it from the build process automatically is a future improvement. |
+<<<<<<< Updated upstream
+=======
+
+## Dual-panel assays (`panels`)
+
+Some assays (KMT2A) are one workbook with a panel per sample. The app splits it
+automatically into one experiment per panel, named `{experiment_id}_{panel_name}`,
+so one replay produces two notifications and two reports. The manifest keeps ONE
+entry (the harness replays the workbook once) and declares the panels:
+
+```json
+{
+  "experiment_id": "KMT2A_E2E",
+  "image_source": "...", "sample_workbook": "...",
+  "comparisons": [ ... ],
+  "panels": {
+    "<panel name as in the workbook>": { "comparisons": [ ... ] },
+    "<other panel name>": {}
+  }
+}
+```
+
+The service expands the entry once when it loads the manifest (`src/panels.py`)
+into one ordinary experiment per panel with id `{experiment_id}_{panel_name}`,
+plus `panel` and `parent_experiment_id` fields. Each panel experiment has its own
+gold standard (register it under the expanded id), gate, comparison and report,
+and the run is ready when every panel has reported. A panel may override
+`comparisons`, `result_file_suffix`, `classification` and
+`counts_for_build_verdict`; anything else is inherited from the entry. `{}`
+inherits everything, and every panel must end up with `comparisons`. The manifest
+file on disk is not modified, and the harness ignores `panels`. The stamping
+script validates the declaration before writing a manifest.
+
+### Stamping cross-check against the workbook
+
+The pipeline names a reanalysis experiment from the sample workbook's
+`RunInfo.ExperimentId` (and panel experiments `{ExperimentId}_{PanelName}`), not from the
+manifest, and the harness takes the images from the folder next to `sample_workbook`
+(`image_source` is only used for imaging). So an entry's `experiment_id` must equal the
+workbook's `RunInfo.ExperimentId`, and its `panels` keys must equal the workbook's
+`PanelName` values. The Ancora data folders carry an imaging timestamp
+(`..._261008_1707`) that is NOT part of the experiment id.
+
+`stamp_manifest_for_run.py` checks this (`src/workbook_check.py`) for every entry whose
+`sample_workbook` exists and refuses to stamp on a mismatch. A workbook that does not
+exist is a warning, or an error with `--require-workbooks` (the workflow passes it).
+>>>>>>> Stashed changes
