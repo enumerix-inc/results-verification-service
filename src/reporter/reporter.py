@@ -118,7 +118,7 @@ def write_report(conn, config: dict, run_id: str,
                 "actual":            sample["actual_value"],
                 "deviation_percent": sample["deviation_percent"],
                 "verdict":           sample["verdict"],
-                "notes":             sample.get("note", ""),
+                "notes":             sample.get("note") or "",
             })
 
             key = (feature_set, comparison_type, metric)

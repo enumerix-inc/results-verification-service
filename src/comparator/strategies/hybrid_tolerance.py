@@ -23,6 +23,7 @@ Strategy signature: run_hybrid_tolerance(actual_samples, gs_samples, params)
 
 import json
 
+from src.comparator.sample_result import build_sample_result
 from src.registration.registrar import SAMPLE_ID_COLUMN
 
 
@@ -45,31 +46,22 @@ def compare_sample_hybrid(sample_id: str, comparison_type: str, metric: str,
     if expected_value < count_threshold:
         deviation_absolute = abs(actual_value - expected_value)
         verdict = "pass" if deviation_absolute <= absolute_tolerance else "fail"
-        return {
-            "sample_id":         sample_id,
-            "comparison_type":   comparison_type,
-            "metric":            metric,
-            "actual_value":      actual_value,
-            "expected_value":    expected_value,
-            "deviation_percent": None,
-            "verdict":           verdict,
-            "note": (
+        return build_sample_result(
+            sample_id=sample_id, comparison_type=comparison_type, metric=metric,
+            actual_value=actual_value, expected_value=expected_value,
+            deviation_percent=None, verdict=verdict,
+            note=(
                 f"expected_value {expected_value} below count_threshold "
                 f"{count_threshold} — absolute tolerance applied "
                 f"(deviation {deviation_absolute}, tolerance ±{absolute_tolerance})"
-            ),
-        }
+            ))
 
     deviation = round(abs(actual_value - expected_value) / expected_value * 100, 4)
-    return {
-        "sample_id":         sample_id,
-        "comparison_type":   comparison_type,
-        "metric":            metric,
-        "actual_value":      actual_value,
-        "expected_value":    expected_value,
-        "deviation_percent": deviation,
-        "verdict":           "pass" if deviation <= tolerance_percent else "fail",
-    }
+    return build_sample_result(
+        sample_id=sample_id, comparison_type=comparison_type, metric=metric,
+        actual_value=actual_value, expected_value=expected_value,
+        deviation_percent=deviation,
+        verdict="pass" if deviation <= tolerance_percent else "fail")
 
 
 def run_hybrid_tolerance(actual_samples: list[dict],
@@ -106,16 +98,11 @@ def run_hybrid_tolerance(actual_samples: list[dict],
 
         for col in columns:
             if actual_row is None:
-                results.append({
-                    "sample_id":         sid,
-                    "comparison_type":   comparison_type,
-                    "metric":            col,
-                    "actual_value":      None,
-                    "expected_value":    gs_metrics.get(col),
-                    "deviation_percent": None,
-                    "verdict":           "fail",
-                    "note":              "sample not found in results",
-                })
+                results.append(build_sample_result(
+                    sample_id=sid, comparison_type=comparison_type, metric=col,
+                    actual_value=None, expected_value=gs_metrics.get(col),
+                    deviation_percent=None, verdict="fail",
+                    note="sample not found in results"))
             else:
                 results.append(compare_sample_hybrid(
                     sid,

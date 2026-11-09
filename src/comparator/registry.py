@@ -8,7 +8,8 @@ here and implement the corresponding strategy in strategies/.
 scope (ADR-021):
   "sample"     fn(actual_samples, gs_samples, params) -> per-(sample, metric)
                result dicts; compared against the registered gold standard,
-               stored in sample_results.
+               stored in sample_results. Build each result with
+               sample_result.build_sample_result (it owns the result's shape).
   "aggregate"  fn(observation_set, params) -> per-(criterion, channel) result
                dicts computed over groups of annotated observations; needs no
                gold standard, stored in aggregate_results (ADR-026).
