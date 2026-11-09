@@ -7,6 +7,7 @@
     {
       "experiment_id": "JW326A_beta3_BCRABL_recovery",
       "feature_set": "ancora_workflow",
+      "reported_values": ["absolute_difference", "relative_difference_percent"],
       "classification": "exploratory",
       "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",
@@ -35,6 +36,7 @@
     {
       "experiment_id": "NP_cKIT_E2E_Beta01",
       "feature_set": "ancora_workflow",
+      "reported_values": ["absolute_difference", "relative_difference_percent"],
       "classification": "exploratory",
       "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",
@@ -56,6 +58,7 @@
     {
       "experiment_id": "MP52v_E2E_test_Beta+03",
       "feature_set": "ancora_workflow",
+      "reported_values": ["absolute_difference", "relative_difference_percent"],
       "classification": "exploratory",
       "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",
@@ -79,6 +82,7 @@
     {
       "experiment_id": "YS_KMT 2tube_E2E on Beta+03",
       "feature_set": "ancora_workflow",
+      "reported_values": ["absolute_difference", "relative_difference_percent"],
       "classification": "exploratory",
       "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",

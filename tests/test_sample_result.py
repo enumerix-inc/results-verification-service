@@ -18,7 +18,7 @@ from src.reporter.reporter import write_report
 SCHEMA = Path(__file__).resolve().parent.parent / "schema" / "verification_schema.sql"
 
 FIELDS = {"sample_id", "comparison_type", "metric", "actual_value", "expected_value",
-          "deviation_percent", "verdict", "note", "derived"}
+          "deviation_percent", "verdict", "note", "derived", "gold_standard"}
 
 
 def _inputs():
@@ -79,13 +79,13 @@ def _report(tmp_path, sample_results):
     return (tmp_path / "reports" / "r" / "detail_report.csv").read_bytes()
 
 
-def test_a_derived_entry_does_not_change_the_detail_report(tmp_path):
-    """derived rides along on a result; until a later change asks for it, the output is unchanged."""
+def test_a_result_without_derived_values_leaves_the_detail_report_columns_alone(tmp_path):
+    """Nothing requested -> no derived or provenance columns (output as before TES-3010)."""
     plain = build_sample_result(sample_id="S1", comparison_type="count_tolerance", metric="c",
                                 actual_value=100, expected_value=100, deviation_percent=0.0,
-                                verdict="pass")
-    rich = dict(plain, derived={"absolute_difference": 0.0})
-    assert _report(tmp_path / "a", [plain]) == _report(tmp_path / "b", [rich])
+                                verdict="pass", gold_standard={"version_number": 3, "checksum_sha256": "ab" * 32})
+    header = _report(tmp_path, [plain]).decode("utf-8").splitlines()[0]
+    assert header == "feature_set,comparison_type,metric,criteria,sample_id,expected,actual,deviation_percent,verdict,notes"
 
 
 def test_a_none_note_is_written_as_an_empty_cell(tmp_path):

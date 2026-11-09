@@ -19,12 +19,15 @@ Fields
                    Always a dict (empty when nothing was requested). Output layers
                    carry it without naming its keys; the database insert ignores it
                    for now.
+  gold_standard    {"version_number", "checksum_sha256"} of the gold standard the value
+                   was compared against, stamped by compare_experiment (None until then).
+                   Lets a reported difference be audited later.
 """
 
 
 def build_sample_result(*, sample_id, comparison_type, metric, actual_value,
                         expected_value, deviation_percent, verdict,
-                        note=None, derived=None) -> dict:
+                        note=None, derived=None, gold_standard=None) -> dict:
     return {
         "sample_id":         sample_id,
         "comparison_type":   comparison_type,
@@ -35,4 +38,5 @@ def build_sample_result(*, sample_id, comparison_type, metric, actual_value,
         "verdict":           verdict,
         "note":              note,
         "derived":           dict(derived) if derived else {},
+        "gold_standard":     gold_standard,
     }

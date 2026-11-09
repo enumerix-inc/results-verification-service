@@ -208,3 +208,22 @@ def test_gold_standard_only_manifest_through_the_service_is_unchanged(stamp, mon
     assert conn.execute("SELECT COUNT(*) FROM aggregate_results").fetchone()[0] == 0
     assert {p.name for p in (tmp_path / "reports" / "run_20261028_002").iterdir()} == {
         "detail_report.csv", "summary_report.csv"}
+
+
+# ---- reported_values is validated at stamping (TES-3010) ------------------------------
+
+def test_an_unknown_reported_value_refuses_to_stamp(stamp, monkeypatch, tmp_path, capsys):
+    rc, files = run_stamp(stamp, monkeypatch, tmp_path, "--template",
+                          str(bad_template(tmp_path, lambda e: e.update(reported_values=["nope"]))))
+    err = capsys.readouterr().err
+    assert rc == 1 and files == [] and "unknown reported value" in err
+
+
+def test_an_unknown_reported_value_inside_a_panel_refuses_to_stamp(stamp, monkeypatch, tmp_path, capsys):
+    def into_panel(e):
+        comparison = {"type": "count_tolerance", "tolerance_percent": 10, "columns": ["c"],
+                      "reported_values": ["nope"]}
+        e.pop("comparisons")
+        e["panels"] = {"Panel A": {"comparisons": [comparison]}}
+    rc, files = run_stamp(stamp, monkeypatch, tmp_path, "--template", str(bad_template(tmp_path, into_panel)))
+    assert rc == 1 and files == [] and "unknown reported value" in capsys.readouterr().err

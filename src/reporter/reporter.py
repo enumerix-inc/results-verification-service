@@ -20,6 +20,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src.comparator.derived_values import DERIVED_VALUES
 from src.database.models import insert_report
 from src.reporter.acceptance_report import write_acceptance_report
 
@@ -88,6 +89,13 @@ def write_report(conn, config: dict, run_id: str,
     reports_dir = Path(config["paths"]["reports_dir"]) / run_id
     reports_dir.mkdir(parents=True, exist_ok=True)
 
+    # Report-only derived values (TES-3010): one column per value that any result
+    # carries, in registry order. With none requested the detail report is unchanged.
+    derived_names = [n for n in DERIVED_VALUES
+                     if any(n in (s.get("derived") or {})
+                            for e in experiment_results for s in e.get("sample_results", []))]
+    provenance = ["gold_standard_version", "gold_standard_sha256"] if derived_names else []
+
     detail_rows = []
     summary_agg = {}  # (feature_set, comparison_type, metric) → aggregation dict
 
@@ -108,6 +116,7 @@ def write_report(conn, config: dict, run_id: str,
             metric = sample["metric"]
             criteria = criteria_by_type.get(comparison_type, comparison_type)
 
+            gold = sample.get("gold_standard") or {}
             detail_rows.append({
                 "feature_set":       feature_set,
                 "comparison_type":   comparison_type,
@@ -117,6 +126,10 @@ def write_report(conn, config: dict, run_id: str,
                 "expected":          sample["expected_value"],
                 "actual":            sample["actual_value"],
                 "deviation_percent": sample["deviation_percent"],
+                **{n: (sample.get("derived") or {}).get(n) for n in derived_names},
+                **({"gold_standard_version": gold.get("version_number"),
+                    "gold_standard_sha256":  (gold.get("checksum_sha256") or "")[:12]}
+                   if derived_names else {}),
                 "verdict":           sample["verdict"],
                 "notes":             sample.get("note") or "",
             })
@@ -138,7 +151,8 @@ def write_report(conn, config: dict, run_id: str,
 
     detail_fieldnames = [
         "feature_set", "comparison_type", "metric", "criteria",
-        "sample_id", "expected", "actual", "deviation_percent", "verdict", "notes",
+        "sample_id", "expected", "actual", "deviation_percent",
+        *derived_names, *provenance, "verdict", "notes",
     ]
     detail_path = reports_dir / "detail_report.csv"
     with open(detail_path, "w", newline="", encoding="utf-8") as f:

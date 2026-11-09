@@ -23,6 +23,7 @@ Strategy signature: run_hybrid_tolerance(actual_samples, gs_samples, params)
 
 import json
 
+from src.comparator.derived_values import apply_derived_values
 from src.comparator.sample_result import build_sample_result
 from src.registration.registrar import SAMPLE_ID_COLUMN
 
@@ -89,6 +90,7 @@ def run_hybrid_tolerance(actual_samples: list[dict],
     absolute_tolerance = params["absolute_tolerance"]
     count_threshold = params["count_threshold"]
     columns = params["columns"]
+    reported_values = params.get("reported_values") or []
 
     results = []
     for gs_sample in gs_samples:
@@ -115,4 +117,6 @@ def run_hybrid_tolerance(actual_samples: list[dict],
                     count_threshold,
                 ))
 
+    for result in results:
+        apply_derived_values(result, reported_values)
     return results

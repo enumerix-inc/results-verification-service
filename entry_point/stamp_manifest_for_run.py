@@ -45,6 +45,7 @@ from src.annotation.annotation import (AnnotationError, find_annotation,  # noqa
                                        load_annotation, resolve_annotations_dir)
 from src.comparator.acceptance_params import (AcceptanceParamsError,  # noqa: E402
                                               parse_acceptance_params)
+from src.comparator.derived_values import validate_reported_values  # noqa: E402
 from src.panels import expand_panels, validate_panels  # noqa: E402
 from src.workbook_check import check_workbooks  # noqa: E402
 
@@ -215,9 +216,9 @@ def main() -> int:
     if not problems:
         # a panel's own comparisons live under `panels` until expanded, so validate
         # the acceptance entries on the expanded experiments, as the service sees them
-        problems = validate_acceptance_experiments(
-            expand_panels({"experiments": experiments})["experiments"],
-            config["paths"].get("annotations_dir"))
+        expanded = expand_panels({"experiments": experiments})["experiments"]
+        problems = validate_reported_values(expanded)
+        problems += validate_acceptance_experiments(expanded, config["paths"].get("annotations_dir"))
     workbook_problems, workbook_warnings = check_workbooks(experiments, require=args.require_workbooks)
     problems += workbook_problems
     for w in workbook_warnings:
