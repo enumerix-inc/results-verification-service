@@ -108,6 +108,24 @@ def test_invalid_acceptance_entry_refuses_to_stamp(stamp, monkeypatch, tmp_path,
     assert "refusing to stamp" in err and msg in err
 
 
+def test_acceptance_entry_inside_a_panel_is_validated_too(stamp, monkeypatch, tmp_path, capsys):
+    def into_panel(e):
+        acceptance = e.pop("comparisons")[0]
+        acceptance["annotation"] = "NO_SUCH_EXPERIMENT"
+        e["panels"] = {"Panel A": {"comparisons": [acceptance]}}
+    rc, files = run_stamp(stamp, monkeypatch, tmp_path, "--template", str(bad_template(tmp_path, into_panel)))
+    err = capsys.readouterr().err
+    assert rc == 1 and files == []
+    assert "refusing to stamp" in err and "NO_SUCH_EXPERIMENT" in err
+
+
+def test_a_good_acceptance_entry_inside_a_panel_still_stamps(stamp, monkeypatch, tmp_path):
+    def into_panel(e):
+        e["panels"] = {"Panel A": {"comparisons": e.pop("comparisons")}}
+    rc, files = run_stamp(stamp, monkeypatch, tmp_path, "--template", str(bad_template(tmp_path, into_panel)))
+    assert rc == 0 and len(files) == 1
+
+
 # ---- mixed manifest through the service ----------------------------------------------
 
 def test_mixed_manifest_runs_both_kinds_and_persists_each_way(stamp, monkeypatch, tmp_path, summary_csv_factory):

@@ -31,8 +31,10 @@ Kept free of database imports so the stamping script can use it too.
 import copy
 
 # Fields a panel may override; everything else comes from the entry itself.
-PANEL_OVERRIDABLE = ("comparisons", "result_file_suffix", "classification",
-                     "counts_for_build_verdict")
+# (counts_for_build_verdict is deliberately not here: nothing in the service reads
+# it, the build verdict is decided by `classification`; allowing a per-panel value
+# would suggest an effect it does not have.)
+PANEL_OVERRIDABLE = ("comparisons", "result_file_suffix", "classification")
 
 
 class PanelError(ValueError):
@@ -65,9 +67,15 @@ def _expand_entry(entry: dict) -> list[dict]:
 
         exp = copy.deepcopy({k: v for k, v in entry.items() if k != "panels"})
         exp.update(copy.deepcopy(overrides))
-        if not exp.get("comparisons"):
+        comparisons = exp.get("comparisons")
+        if comparisons is None or comparisons == []:
             raise PanelError(f"{where}: panel '{name}' has no comparisons (declare "
                              f"them on the entry or on the panel)")
+        if (not isinstance(comparisons, list)
+                or not all(isinstance(c, dict) and isinstance(c.get("type"), str) and c["type"]
+                           for c in comparisons)):
+            raise PanelError(f"{where}: panel '{name}' comparisons must be a non-empty list "
+                             f"of objects, each with a 'type'")
         exp["experiment_id"] = panel_experiment_id(entry["experiment_id"], name)
         exp["parent_experiment_id"] = entry["experiment_id"]
         exp["panel"] = name

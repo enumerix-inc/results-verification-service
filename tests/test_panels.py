@@ -58,10 +58,10 @@ def test_panel_experiment_has_own_comparisons_and_inherits_the_rest():
 
 def test_panel_inherits_entry_comparisons_and_can_override_classification():
     entry = kmt2a(comparisons=CMP_A, panels={"PanelA": {}, "PanelB": {
-        "comparisons": CMP_B, "classification": "exploratory", "counts_for_build_verdict": False}})
+        "comparisons": CMP_B, "classification": "exploratory"}})
     a, b = expand_panels(manifest(entry))["experiments"]
     assert a["comparisons"] == CMP_A and a["classification"] == "stability"
-    assert b["classification"] == "exploratory" and b["counts_for_build_verdict"] is False
+    assert b["classification"] == "exploratory"
 
 
 def test_input_manifest_is_not_modified():
@@ -80,6 +80,24 @@ def test_bad_panels_shapes_are_rejected(panels):
 def test_unsupported_override_is_rejected():
     with pytest.raises(PanelError, match="image_source"):
         expand_panels(manifest(kmt2a(panels={"PanelA": {"image_source": "x"}})))
+
+
+def test_counts_for_build_verdict_cannot_be_overridden_per_panel():
+    # nothing reads it (the build verdict comes from `classification`), so don't pretend
+    with pytest.raises(PanelError, match="counts_for_build_verdict"):
+        expand_panels(manifest(kmt2a(panels={"PanelA": {"counts_for_build_verdict": False}})))
+
+
+@pytest.mark.parametrize("bad", [{"type": "hybrid_tolerance"}, "hybrid_tolerance", [1], [{}],
+                                 [{"type": ""}], [{"type": 5}], 5])
+def test_malformed_comparisons_are_rejected_not_left_to_crash_verification(bad):
+    with pytest.raises(PanelError, match="non-empty list of objects"):
+        expand_panels(manifest(kmt2a(panels={"PanelA": {"comparisons": bad}})))
+
+
+def test_malformed_entry_level_comparisons_are_rejected_when_a_panel_inherits_them():
+    with pytest.raises(PanelError, match="non-empty list of objects"):
+        expand_panels(manifest(kmt2a(comparisons="oops", panels={"PanelA": {}})))
 
 
 def test_panel_with_no_comparisons_anywhere_is_rejected():

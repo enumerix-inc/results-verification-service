@@ -235,8 +235,8 @@ into one ordinary experiment per panel with id `{experiment_id}_{panel_name}`,
 plus `panel` and `parent_experiment_id` fields. Each panel experiment has its own
 gold standard (register it under the expanded id), gate, comparison and report,
 and the run is ready when every panel has reported. A panel may override
-`comparisons`, `result_file_suffix`, `classification` and
-`counts_for_build_verdict`; anything else is inherited from the entry. `{}`
-inherits everything, and every panel must end up with `comparisons`. The manifest
+`comparisons`, `result_file_suffix` and `classification`;
+anything else is inherited from the entry. `{}`
+inherits everything, and every panel must end up with `comparisons` (a non-empty list of objects with a `type`). The manifest
 file on disk is not modified, and the harness ignores `panels`. The stamping
 script validates the declaration before writing a manifest.
