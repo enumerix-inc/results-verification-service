@@ -236,7 +236,21 @@ plus `panel` and `parent_experiment_id` fields. Each panel experiment has its ow
 gold standard (register it under the expanded id), gate, comparison and report,
 and the run is ready when every panel has reported. A panel may override
 `comparisons`, `result_file_suffix` and `classification`;
-anything else is inherited from the entry. `{}`
-inherits everything, and every panel must end up with `comparisons` (a non-empty list of objects with a `type`). The manifest
+anything else is inherited from the entry. `{}` inherits everything, and every
+panel must end up with `comparisons` (a non-empty list of objects with a `type`). The manifest
 file on disk is not modified, and the harness ignores `panels`. The stamping
 script validates the declaration before writing a manifest.
+
+### Stamping cross-check against the workbook
+
+The pipeline names a reanalysis experiment from the sample workbook's
+`RunInfo.ExperimentId` (and panel experiments `{ExperimentId}_{PanelName}`), not from the
+manifest, and the harness takes the images from the folder next to `sample_workbook`
+(`image_source` is only used for imaging). So an entry's `experiment_id` must equal the
+workbook's `RunInfo.ExperimentId`, and its `panels` keys must equal the workbook's
+`PanelName` values. The Ancora data folders carry an imaging timestamp
+(`..._261008_1707`) that is NOT part of the experiment id.
+
+`stamp_manifest_for_run.py` checks this (`src/workbook_check.py`) for every entry whose
+`sample_workbook` exists and refuses to stamp on a mismatch. A workbook that does not
+exist is a warning, or an error with `--require-workbooks` (the workflow passes it).

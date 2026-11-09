@@ -1,0 +1,286 @@
+{
+  "RunInfo": {
+    "Version": "v3.0",
+    "User": "yshang",
+    "ExperimentId": "YS_KMT 2tube_E2E on Beta\u002B03_Panel A",
+    "AssayId": 5,
+    "PanelId": "panelA",
+    "ReagentKits": {
+      "KT0012": "",
+      "KT0014": ""
+    },
+    "ConversionFactor": null
+  },
+  "OptionalInfo": {
+    "LinkageAnalysis": true
+  },
+  "Channels": [
+    {
+      "Key": "Ch01",
+      "Dyes": [
+        {
+          "Name": "Dye_1",
+          "Target": null
+        }
+      ]
+    },
+    {
+      "Key": "Ch02",
+      "Dyes": [
+        {
+          "Name": "Dye_2",
+          "Target": null
+        }
+      ]
+    },
+    {
+      "Key": "Ch03",
+      "Dyes": [
+        {
+          "Name": "Dye_3",
+          "Target": null
+        }
+      ]
+    },
+    {
+      "Key": "Ch04",
+      "Dyes": [
+        {
+          "Name": "Dye_4",
+          "Target": null
+        }
+      ]
+    },
+    {
+      "Key": "Ch05",
+      "Dyes": [
+        {
+          "Name": "Dye_5",
+          "Target": null
+        }
+      ]
+    }
+  ],
+  "Strips": [
+    {
+      "CarouselPosition": 1,
+      "Barcode": "2I5A27",
+      "Tubes": [
+        {
+          "Position": 1,
+          "SampleName": "GX00134-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 2,
+          "SampleName": "GX00135-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 3,
+          "SampleName": "GX00136-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 4,
+          "SampleName": "GX00137-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        }
+      ]
+    },
+    {
+      "CarouselPosition": 2,
+      "Barcode": "2I5A26",
+      "Tubes": [
+        {
+          "Position": 1,
+          "SampleName": "GX00138-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 2,
+          "SampleName": "GX00139-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 3,
+          "SampleName": "GX00140-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 4,
+          "SampleName": "GX00141-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        }
+      ]
+    },
+    {
+      "CarouselPosition": 3,
+      "Barcode": "2I5B75",
+      "Tubes": [
+        {
+          "Position": 1,
+          "SampleName": "GX00142-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 2,
+          "SampleName": "T1_GX00152-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 3,
+          "SampleName": "T1_RS-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": [
+            {
+              "Key": "Ch01"
+            },
+            {
+              "Key": "Ch02"
+            },
+            {
+              "Key": "Ch03"
+            },
+            {
+              "Key": "Ch04"
+            },
+            {
+              "Key": "Ch05"
+            }
+          ]
+        },
+        {
+          "Position": 4,
+          "SampleName": "T1_NTC-Rep1",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        }
+      ]
+    },
+    {
+      "CarouselPosition": 4,
+      "Barcode": "2I5961",
+      "Tubes": [
+        {
+          "Position": 1,
+          "SampleName": "GX00134-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 2,
+          "SampleName": "GX00135-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 3,
+          "SampleName": "GX00136-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 4,
+          "SampleName": "GX00137-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        }
+      ]
+    },
+    {
+      "CarouselPosition": 5,
+      "Barcode": "2I5968",
+      "Tubes": [
+        {
+          "Position": 1,
+          "SampleName": "GX00138-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 2,
+          "SampleName": "GX00139-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 3,
+          "SampleName": "GX00140-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 4,
+          "SampleName": "GX00141-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        }
+      ]
+    },
+    {
+      "CarouselPosition": 6,
+      "Barcode": "2I5963",
+      "Tubes": [
+        {
+          "Position": 1,
+          "SampleName": "GX00142-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 2,
+          "SampleName": "T1_GX00152-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 3,
+          "SampleName": "T1_RS-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        },
+        {
+          "Position": 4,
+          "SampleName": "T1-NTC-Rep2",
+          "GroupName": null,
+          "PanelName": null,
+          "TrainingSample": []
+        }
+      ]
+    }
+  ]
+}

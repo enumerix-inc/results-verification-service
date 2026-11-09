@@ -46,6 +46,7 @@ from src.annotation.annotation import (AnnotationError, find_annotation,  # noqa
 from src.comparator.acceptance_params import (AcceptanceParamsError,  # noqa: E402
                                               parse_acceptance_params)
 from src.panels import expand_panels, validate_panels  # noqa: E402
+from src.workbook_check import check_workbooks  # noqa: E402
 
 RUN_ID_RE = re.compile(r"^context_manifest_run_(\d{8})_(\d{3})\.json$")
 
@@ -158,6 +159,11 @@ def main() -> int:
                          help="Path to another template whose experiments are added "
                               "to the manifest (repeatable), e.g. "
                               "manifest_template_acceptance.json.")
+    parser.add_argument("--require-workbooks", action="store_true",
+                         help="Treat a missing sample_workbook file as an error. Without it a "
+                              "missing workbook is only a warning (e.g. a dev machine without "
+                              "the data drive); a workbook that exists is always cross-checked "
+                              "against its manifest entry. The workflow passes this flag.")
     parser.add_argument("--triggered-by", default=None,
                          help="Override the computed triggered_by value.")
     args = parser.parse_args()
@@ -212,6 +218,10 @@ def main() -> int:
         problems = validate_acceptance_experiments(
             expand_panels({"experiments": experiments})["experiments"],
             config["paths"].get("annotations_dir"))
+    workbook_problems, workbook_warnings = check_workbooks(experiments, require=args.require_workbooks)
+    problems += workbook_problems
+    for w in workbook_warnings:
+        print(f"Warning: {w} (workbook not cross-checked)", file=sys.stderr)
     if problems:
         print("Error: refusing to stamp - invalid manifest entries:",
               file=sys.stderr)
