@@ -47,7 +47,7 @@ from src.comparator.acceptance_params import (AcceptanceParamsError,  # noqa: E4
                                               parse_acceptance_params)
 <<<<<<< Updated upstream
 =======
-from src.panels import validate_panels  # noqa: E402
+from src.panels import expand_panels, validate_panels  # noqa: E402
 from src.workbook_check import check_workbooks  # noqa: E402
 >>>>>>> Stashed changes
 
@@ -87,7 +87,8 @@ def validate_acceptance_experiments(experiments: list[dict], annotations_dir=Non
     """Return a list of problems with any acceptance_criteria entries (empty = ok)."""
     problems = []
     for exp in experiments:
-        entries = [c for c in exp.get("comparisons", []) if c.get("type") == "acceptance_criteria"]
+        entries = [c for c in (exp.get("comparisons") or [])
+                   if isinstance(c, dict) and c.get("type") == "acceptance_criteria"]
         if len(entries) > 1:
             problems.append(f"{exp['experiment_id']}: more than one acceptance_criteria entry; "
                             f"put all criteria in one entry")
@@ -222,8 +223,15 @@ def main() -> int:
     for w in workbook_warnings:
         print(f"Warning: {w} (workbook not cross-checked)", file=sys.stderr)
 >>>>>>> Stashed changes
+    problems = validate_panels(experiments)
+    if not problems:
+        # a panel's own comparisons live under `panels` until expanded, so validate
+        # the acceptance entries on the expanded experiments, as the service sees them
+        problems = validate_acceptance_experiments(
+            expand_panels({"experiments": experiments})["experiments"],
+            config["paths"].get("annotations_dir"))
     if problems:
-        print("Error: refusing to stamp - the acceptance criteria entries are invalid:",
+        print("Error: refusing to stamp - invalid manifest entries:",
               file=sys.stderr)
         for p in problems:
             print(f"  {p}", file=sys.stderr)

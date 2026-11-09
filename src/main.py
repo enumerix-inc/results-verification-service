@@ -25,6 +25,7 @@ from src.listener.listener import listen_async, listen_async_mock
 from src.orchestrator.orchestrator import verify_run
 from src.orchestrator.watcher import watch_and_confirm
 from src.orchestrator.manifest_watcher import watch_manifests_dir
+from src.panels import expand_panels
 from src.registration.registrar import register_gold_standard
 
 # Manifest read retry: watchdog's on_created/on_moved can fire before a
@@ -342,6 +343,9 @@ async def run_service(config: dict, token: asyncio.Event) -> None:
             return
 
         try:
+            # A dual-panel assay is one manifest entry; the service tracks one
+            # experiment per panel (TES-2990), so expand before registering.
+            manifest = expand_panels(manifest)
             run_id, expected = _manifest_identity(manifest)
         except ValueError as e:
             # Must not raise: during the startup catch-up scan an escaping
