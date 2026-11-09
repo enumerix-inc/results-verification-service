@@ -14,6 +14,7 @@ Entry point: compare_experiment()
 from src.annotation.annotation import (AnnotationError, find_annotation,
                                        load_annotation, resolve_annotations_dir)
 from src.comparator.acceptance_params import AcceptanceParamsError
+from src.comparator.derived_values import resolve_reported_values, validate_reported_values
 from src.comparator.registry import AGGREGATE, COMPARISON_REGISTRY, SAMPLE
 from src.database.models import get_active_gs_version, get_gs_samples
 from src.observations import ObservationError, read_observations
@@ -74,6 +75,9 @@ def compare_experiment(conn, experiment: dict, result_csv_path: str,
     for comparison in comparisons:
         if comparison["type"] not in COMPARISON_REGISTRY:
             raise ValueError(f"Unknown comparison type: '{comparison['type']}'")
+    problems = validate_reported_values([experiment])
+    if problems:
+        raise ValueError("; ".join(problems))
     aggregates = [c for c in comparisons
                   if COMPARISON_REGISTRY[c["type"]]["scope"] == AGGREGATE]
     if len(aggregates) > 1:
@@ -90,10 +94,17 @@ def compare_experiment(conn, experiment: dict, result_csv_path: str,
         gs_samples = get_gs_samples(conn, gs_exp_version_id)
         gs_samples_by_id = {s["sample_id"]: s for s in gs_samples}
         actual_samples = read_gold_standard_csv(result_csv_path)
+        gold_standard = {"version_number": active["version_number"],
+                         "checksum_sha256": active["checksum_hash"]}
         for comparison in comparisons:
             entry = COMPARISON_REGISTRY[comparison["type"]]
             if entry["scope"] == SAMPLE:
-                comparison_results.extend(entry["fn"](actual_samples, gs_samples, comparison))
+                # report-only derived values: the comparison's own list, else the experiment's default
+                params = {**comparison, "reported_values": resolve_reported_values(experiment, comparison)}
+                results = entry["fn"](actual_samples, gs_samples, params)
+                for result in results:
+                    result["gold_standard"] = gold_standard
+                comparison_results.extend(results)
 
     for comparison in aggregates:
         aggregate_results, observation_set = _run_aggregate(

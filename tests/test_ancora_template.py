@@ -105,3 +105,17 @@ def test_each_experiment_passes_against_its_own_gold_standard(conn, eid):
     out = compare_experiment(conn, expanded()[eid], str(DATA / GOLD[eid]))
     results = out["comparison_results"]
     assert results and {r["verdict"] for r in results} == {"pass"}
+
+
+def test_every_assay_opts_in_to_the_difference_columns():
+    assert all(e["reported_values"] == ["absolute_difference", "relative_difference_percent"]
+               for e in template()["experiments"])
+
+
+@pytest.mark.parametrize("eid", sorted(GOLD))
+def test_derived_values_are_zero_against_the_gold_standard_itself(conn, eid):
+    out = compare_experiment(conn, expanded()[eid], str(DATA / GOLD[eid]))
+    for r in out["comparison_results"]:
+        assert r["derived"]["absolute_difference"] == 0.0
+        assert r["derived"]["relative_difference_percent"] in (0.0, None)      # None only where gold is 0
+        assert r["gold_standard"]["version_number"] == 1

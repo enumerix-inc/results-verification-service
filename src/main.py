@@ -18,6 +18,7 @@ import re
 import shutil
 from pathlib import Path
 
+from src.comparator.derived_values import validate_reported_values
 from src.config_loader import load_config
 from src.database.db import get_connection, initialise_database
 from src.database.models import get_all_processed_run_ids, get_all_reported_run_ids
@@ -347,6 +348,9 @@ async def run_service(config: dict, token: asyncio.Event) -> None:
             # experiment per panel (TES-2990), so expand before registering.
             manifest = expand_panels(manifest)
             run_id, expected = _manifest_identity(manifest)
+            problems = validate_reported_values(manifest["experiments"])
+            if problems:
+                raise ValueError("; ".join(problems))
         except ValueError as e:
             # Must not raise: during the startup catch-up scan an escaping
             # exception would kill the watcher before it signals ready,

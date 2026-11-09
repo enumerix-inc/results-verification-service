@@ -75,6 +75,7 @@ Each entry defines one experiment to be run and verified. All current experiment
 | `image_source` | string | yes | Path to the raw images for this experiment — what the test harness feeds through the pipeline. |
 | `sample_workbook` | string | yes | Path to the workbook file. Used for sample metadata only — not currently read by the verification service's code, but part of the documented contract for the harness/future tooling. |
 | `comparisons` | array | yes | List of comparison entries to run against this experiment's active registered gold standard. See below. |
+| `reported_values` | array of strings | no | Default report-only calculations for this experiment's sample-scope comparisons (`count_tolerance`, `hybrid_tolerance`). A comparison entry can set its own `reported_values`, which wins over this default. See "Report-only derived values" below. |
 | `result_file_suffix` | string | no | The suffix (including extension) of the pipeline output CSV this experiment should be verified against, e.g. `"CountableDataSummary.csv"`, `"CountableLinkageSummary_beta.csv"`, or `"TargetSummary.csv"` for Ancora assays (their files are named `Countable<Assay>TargetSummary.csv`, so one shared suffix matches every assay; the compared `columns` are target names such as `TypeA_CountsPer50ul`, not dye names). The orchestrator globs for `*{result_file_suffix}` inside the experiment's result folder. Defaults to `"CountableDataSummary.csv"` when omitted, since different experiment types (e.g. linkage) produce differently-named output files from the same result folder and the pipeline has no single canonical output filename (session 14). |
 | `parent_experiment_id` | string | no | Present only for child experiments. References the experiment whose gold standard should be inherited. |
 | `gold_standard_mode` | string | no | `"inherit_from_parent"` for child experiments. |
@@ -210,6 +211,41 @@ An experiment's `comparisons` array can contain more than one entry — e.g. a f
 | `dynamic_range` (e.g. `JS221N_serial_titration_PSF`) | Really a whole-experiment trend/curve property (linearity, %CV), not a per-sample check. `hybrid_tolerance` in use as a near-term stand-in. See ADR-021. |
 | `10_channel` | Per-channel breakdown criteria still TBD — no registered experiment yet. |
 | All experiments | `pipeline_build` is filled in manually for now; pulling it from the build process automatically is a future improvement. |
+
+## Report-only derived values (`reported_values`)
+
+A tolerance check judges (pass/fail). A derived value only **measures**, so a person can read the
+numbers: it never changes a verdict or the build verdict, and failing to compute one never fails a
+run. Declare them with `reported_values`, either on a sample-scope comparison entry or as an
+experiment-level default that its sample-scope comparisons inherit:
+
+```json
+{
+  "experiment_id": "NP_cKIT_E2E_Beta01",
+  "reported_values": ["absolute_difference", "relative_difference_percent"],
+  "comparisons": [ { "type": "hybrid_tolerance", ... } ]
+}
+```
+
+| Name | Definition (signed) |
+|---|---|
+| `absolute_difference` | `actual - expected` (gold standard) |
+| `relative_difference_percent` | `(actual - expected) / expected * 100`; blank when `expected` is 0 |
+
+- A negative number means the new build is below the gold standard. For a percentage-valued column
+  the absolute difference is in percentage points.
+- A value that cannot be computed (zero gold value, missing sample) is an empty cell; a zero gold
+  value also adds a note to the row.
+- Unknown names, a non-list, duplicates, or `reported_values` on a non-sample-scope comparison
+  (e.g. `acceptance_criteria`) are refused at stamping and when the service loads the manifest.
+  Inside `panels`, a panel's own `comparisons` entries are checked after expansion.
+- `detail_report.csv` gets one column per requested value, in the order of the table above (not the
+  manifest's order), after `deviation_percent`. When at least one is requested it also gets
+  `gold_standard_version` and `gold_standard_sha256` (first 12 characters), identifying the gold
+  standard the difference was computed against. With none requested the report is unchanged.
+- The values are not stored in the database yet. New values are added in
+  `src/comparator/derived_values.py` (a function plus one registry line); there are no
+  user-defined formulas.
 
 ## Dual-panel assays (`panels`)
 

@@ -12,6 +12,7 @@ Strategy signature: run_count_tolerance(actual_samples, gs_samples, params)
 
 import json
 
+from src.comparator.derived_values import apply_derived_values
 from src.comparator.sample_result import build_sample_result
 from src.registration.registrar import SAMPLE_ID_COLUMN
 
@@ -71,6 +72,7 @@ def run_count_tolerance(actual_samples: list[dict],
     comparison_type = params["type"]
     tolerance = params["tolerance_percent"]
     columns = params["columns"]
+    reported_values = params.get("reported_values") or []
 
     results = []
     for gs_sample in gs_samples:
@@ -95,4 +97,6 @@ def run_count_tolerance(actual_samples: list[dict],
                     tolerance,
                 ))
 
+    for result in results:
+        apply_derived_values(result, reported_values)
     return results
