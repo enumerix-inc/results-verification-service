@@ -7,8 +7,8 @@
     {
       "experiment_id": "JW326A_beta3_BCRABL_recovery",
       "feature_set": "ancora_workflow",
-      "classification": "stability",
-      "counts_for_build_verdict": true,
+      "classification": "exploratory",
+      "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",
       "image_source": "E:\\CountableLabs\\Data\\JW326A_beta3_BCRABL_recovery_260807_1449",
       "sample_workbook": "E:\\CountableLabs\\Data\\JW326A_beta3_BCRABL_recovery_260807_1449\\Workbook_JW326A_beta3_BCRABL_recovery.json",
@@ -35,8 +35,8 @@
     {
       "experiment_id": "NP_cKIT_E2E_Beta01",
       "feature_set": "ancora_workflow",
-      "classification": "stability",
-      "counts_for_build_verdict": true,
+      "classification": "exploratory",
+      "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",
       "image_source": "E:\\CountableLabs\\Data\\NP_cKIT_E2E_Beta01_261009_1334",
       "sample_workbook": "E:\\CountableLabs\\Data\\NP_cKIT_E2E_Beta01_261009_1334\\Workbook_NP_cKIT_E2E_Beta01.json",
@@ -56,8 +56,8 @@
     {
       "experiment_id": "MP52v_E2E_test_Beta+03",
       "feature_set": "ancora_workflow",
-      "classification": "stability",
-      "counts_for_build_verdict": true,
+      "classification": "exploratory",
+      "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",
       "image_source": "E:\\CountableLabs\\Data\\MP52v_E2E_test_Beta+03_261008_1318",
       "sample_workbook": "E:\\CountableLabs\\Data\\MP52v_E2E_test_Beta+03_261008_1318\\Workbook_MP52v_E2E_test_Beta+03.json",
@@ -79,8 +79,8 @@
     {
       "experiment_id": "YS_KMT 2tube_E2E on Beta+03",
       "feature_set": "ancora_workflow",
-      "classification": "stability",
-      "counts_for_build_verdict": true,
+      "classification": "exploratory",
+      "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",
       "image_source": "E:\\CountableLabs\\Data\\YS_KMT 2tube_E2E on Beta+03_261008_1707",
       "sample_workbook": "E:\\CountableLabs\\Data\\YS_KMT 2tube_E2E on Beta+03_261008_1707\\Workbook_YS_KMT 2tube_E2E on Beta+03.json",

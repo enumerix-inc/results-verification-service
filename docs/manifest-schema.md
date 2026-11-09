@@ -71,7 +71,7 @@ Each entry defines one experiment to be run and verified. All current experiment
 | `experiment_id` | string | yes | Stable identifier e.g. `"T078_run3"`. Must match registration in the verification database exactly — a mismatch here silently produces blank reports (see STATUS.md session 8). |
 | `feature_set` | string | yes | Pipeline feature being exercised e.g. `"baseline_algo_performance"`. |
 | `classification` | string | yes | `"stability"` or `"exploratory"` (ADR-003). |
-| `counts_for_build_verdict` | boolean | yes | Whether this experiment's result contributes to the build verdict. |
+| `counts_for_build_verdict` | boolean | yes | Informational. Nothing in the service reads it: the build verdict is driven by `classification` alone (a `stability` failure fails the build, an `exploratory` failure only warns). Keep it consistent with `classification` (`true` for `stability`, `false` for `exploratory`). It cannot be overridden per panel. |
 | `image_source` | string | yes | Path to the raw images for this experiment — what the test harness feeds through the pipeline. |
 | `sample_workbook` | string | yes | Path to the workbook file. Used for sample metadata only — not currently read by the verification service's code, but part of the documented contract for the harness/future tooling. |
 | `comparisons` | array | yes | List of comparison entries to run against this experiment's active registered gold standard. See below. |
