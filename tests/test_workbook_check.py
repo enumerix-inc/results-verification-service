@@ -43,6 +43,19 @@ def test_split_workbook_has_the_escaped_plus_decoded_and_no_panel_names():
     assert eid == "YS_KMT 2tube_E2E on Beta+03_Panel A" and panels == frozenset()
 
 
+@pytest.mark.parametrize("body", [
+    '"Strips": {"a": 1}',
+    '"Strips": ["x"]',
+    '"Strips": [{"Tubes": "x"}]',
+    '"Strips": [{"Tubes": [null]}]',
+])
+def test_malformed_strips_or_tubes_raise_a_clear_error(tmp_path, body):
+    p = tmp_path / "w.json"
+    p.write_text('{"RunInfo": {"ExperimentId": "X"}, ' + body + '}')
+    with pytest.raises(WorkbookReadError):
+        read_workbook_facts(p)
+
+
 def test_blank_panel_names_are_not_panels(tmp_path):
     wb = write_workbook(tmp_path / "w.json", "X", panels=[" ", None, ""])
     assert read_workbook_facts(wb) == ("X", frozenset())

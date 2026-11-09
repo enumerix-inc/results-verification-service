@@ -36,10 +36,24 @@ def read_workbook_facts(path) -> tuple[str, frozenset]:
     experiment_id = run_info.get("ExperimentId") if isinstance(run_info, dict) else None
     if not isinstance(experiment_id, str) or not experiment_id:
         raise WorkbookReadError(f"workbook {path} has no RunInfo.ExperimentId")
+    strips = data.get("Strips")
+    if strips is None:
+        strips = []
+    if not isinstance(strips, list):
+        raise WorkbookReadError(f"workbook {path}: 'Strips' must be a list")
     panels = set()
-    for strip in data.get("Strips") or []:
-        for tube in (strip or {}).get("Tubes") or []:
-            name = (tube or {}).get("PanelName")
+    for strip in strips:
+        if not isinstance(strip, dict):
+            raise WorkbookReadError(f"workbook {path}: every entry of 'Strips' must be an object")
+        tubes = strip.get("Tubes")
+        if tubes is None:
+            tubes = []
+        if not isinstance(tubes, list):
+            raise WorkbookReadError(f"workbook {path}: a strip's 'Tubes' must be a list")
+        for tube in tubes:
+            if not isinstance(tube, dict):
+                raise WorkbookReadError(f"workbook {path}: every entry of 'Tubes' must be an object")
+            name = tube.get("PanelName")
             if isinstance(name, str) and name.strip():
                 panels.add(name)
     return experiment_id, frozenset(panels)
