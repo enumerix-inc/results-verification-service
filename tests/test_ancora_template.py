@@ -49,10 +49,20 @@ def expanded():
     return {e["experiment_id"]: e for e in expand_panels(template())["experiments"]}
 
 
-def test_template_declares_the_four_assays_with_kmt2a_split_into_two_panels():
-    assert [e["experiment_id"] for e in template()["experiments"]] == \
-        ["JW326A_beta3_BCRABL_recovery", "NP_cKIT_E2E_Beta01", "MP52v_E2E_test_Beta+03", KMT]
+def test_template_declares_the_four_assays_with_kmt2a_as_two_plain_panel_entries():
+    """The harness reanalyzes one workbook per manifest entry and, unlike the app, does not split a
+    dual-panel workbook, so KMT2A is two entries that each point at a split panel workbook."""
+    ids = [e["experiment_id"] for e in template()["experiments"]]
+    assert ids == ["JW326A_beta3_BCRABL_recovery", "NP_cKIT_E2E_Beta01", "MP52v_E2E_test_Beta+03",
+                   f"{KMT}_Panel A", f"{KMT}_Panel B"]
     assert sorted(expanded()) == sorted(GOLD)
+    assert not any("panels" in e for e in template()["experiments"])
+
+
+def test_the_two_kmt2a_panels_share_one_image_folder():
+    a, b = (e for e in template()["experiments"] if e["experiment_id"].startswith(KMT))
+    assert a["image_source"] == b["image_source"]
+    assert a["sample_workbook"] != b["sample_workbook"]
 
 
 def test_every_compared_column_exists_in_its_gold_standard_and_none_is_missed():
@@ -67,12 +77,15 @@ def test_entries_use_the_workbook_paths_on_the_regression_machine():
         folder = e["image_source"].rsplit("\\", 1)[1]
         assert e["image_source"].startswith("E:\\CountableLabs\\Data\\")
         assert e["sample_workbook"] == f"{e['image_source']}\\Workbook_{e['experiment_id']}.json"
-        assert folder.startswith(e["experiment_id"] + "_")      # folder = experiment id + imaging timestamp
+        base = e["experiment_id"].rsplit("_Panel ", 1)[0]       # a panel experiment lives in its parent's folder
+        assert folder.startswith(base + "_")                    # folder = experiment id + imaging timestamp
 
 
-def test_kmt2a_entry_agrees_with_the_real_master_workbook():
-    kmt = next(e for e in template()["experiments"] if e["experiment_id"] == KMT)
-    assert check_entry(kmt, *read_workbook_facts(DATA / "kmt2a_master_workbook.json")) == []
+@pytest.mark.parametrize("panel, fixture", [("Panel A", "kmt2a_panel_a_workbook.json"),
+                                             ("Panel B", "kmt2a_panel_b_workbook.json")])
+def test_each_kmt2a_panel_entry_agrees_with_its_real_split_workbook(panel, fixture):
+    entry = next(e for e in template()["experiments"] if e["experiment_id"] == f"{KMT}_{panel}")
+    assert check_entry(entry, *read_workbook_facts(DATA / fixture)) == []
 
 
 def test_template_stamps_alone_and_with_the_acceptance_experiment(tmp_path, monkeypatch):

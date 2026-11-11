@@ -80,48 +80,52 @@
       ]
     },
     {
-      "experiment_id": "YS_KMT 2tube_E2E on Beta+03",
+      "experiment_id": "YS_KMT 2tube_E2E on Beta+03_Panel A",
       "feature_set": "ancora_workflow",
       "reported_values": ["absolute_difference", "relative_difference_percent"],
       "classification": "exploratory",
       "counts_for_build_verdict": false,
       "result_file_suffix": "TargetSummary.csv",
       "image_source": "E:\\CountableLabs\\Data\\YS_KMT 2tube_E2E on Beta+03_261008_1707",
-      "sample_workbook": "E:\\CountableLabs\\Data\\YS_KMT 2tube_E2E on Beta+03_261008_1707\\Workbook_YS_KMT 2tube_E2E on Beta+03.json",
-      "panels": {
-        "Panel A": {
-          "comparisons": [
-            {
-              "type": "hybrid_tolerance",
-              "tolerance_percent": 10.0,
-              "absolute_tolerance": 2,
-              "count_threshold": 100,
-              "columns": [
-                "KMT2A::AFF1_CountsPer50ul",
-                "KMT2A::MLLT3_CountsPer50ul",
-                "KMT2A::MLLT1_CountsPer50ul",
-                "ABL1_CountsPer50ul"
-              ]
-            }
-          ]
-        },
-        "Panel B": {
-          "comparisons": [
-            {
-              "type": "hybrid_tolerance",
-              "tolerance_percent": 10.0,
-              "absolute_tolerance": 2,
-              "count_threshold": 100,
-              "columns": [
-                "KMT2A::MLLT4_CountsPer50ul",
-                "KMT2A::ELL_CountsPer50ul",
-                "KMT2A::MLLT10_CountsPer50ul",
-                "ABL1_CountsPer50ul"
-              ]
-            }
+      "sample_workbook": "E:\\CountableLabs\\Data\\YS_KMT 2tube_E2E on Beta+03_261008_1707\\Workbook_YS_KMT 2tube_E2E on Beta+03_Panel A.json",
+      "comparisons": [
+        {
+          "type": "hybrid_tolerance",
+          "tolerance_percent": 10.0,
+          "absolute_tolerance": 2,
+          "count_threshold": 100,
+          "columns": [
+            "KMT2A::AFF1_CountsPer50ul",
+            "KMT2A::MLLT3_CountsPer50ul",
+            "KMT2A::MLLT1_CountsPer50ul",
+            "ABL1_CountsPer50ul"
           ]
         }
-      }
+      ]
+    },
+    {
+      "experiment_id": "YS_KMT 2tube_E2E on Beta+03_Panel B",
+      "feature_set": "ancora_workflow",
+      "reported_values": ["absolute_difference", "relative_difference_percent"],
+      "classification": "exploratory",
+      "counts_for_build_verdict": false,
+      "result_file_suffix": "TargetSummary.csv",
+      "image_source": "E:\\CountableLabs\\Data\\YS_KMT 2tube_E2E on Beta+03_261008_1707",
+      "sample_workbook": "E:\\CountableLabs\\Data\\YS_KMT 2tube_E2E on Beta+03_261008_1707\\Workbook_YS_KMT 2tube_E2E on Beta+03_Panel B.json",
+      "comparisons": [
+        {
+          "type": "hybrid_tolerance",
+          "tolerance_percent": 10.0,
+          "absolute_tolerance": 2,
+          "count_threshold": 100,
+          "columns": [
+            "KMT2A::MLLT4_CountsPer50ul",
+            "KMT2A::ELL_CountsPer50ul",
+            "KMT2A::MLLT10_CountsPer50ul",
+            "ABL1_CountsPer50ul"
+          ]
+        }
+      ]
     }
   ]
 }

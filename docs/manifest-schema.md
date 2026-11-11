@@ -249,6 +249,16 @@ experiment-level default that its sample-scope comparisons inherit:
 
 ## Dual-panel assays (`panels`)
 
+> **The Ancora template does not use `panels` for KMT2A.** The test harness reanalyzes exactly one
+> workbook per manifest entry and, unlike the app's reanalysis screen, does not split a dual-panel
+> workbook into panel workbooks, so a `panels` entry would make it look for an acquisition config for
+> the master experiment that does not exist (the imaging run only wrote `AcquisitionConfig_<id>_Panel A`
+> and `_Panel B`). KMT2A is therefore two ordinary entries, `<id>_Panel A` and `<id>_Panel B`, each with
+> `sample_workbook` set to that panel's split workbook (`Workbook_<id>_Panel A.json`, which must sit in the
+> image folder; the app writes it with a timestamp in the name, so copy it to the plain name) and the
+> same `image_source`. `panels` stays available for a harness that does the splitting.
+
+
 Some assays (KMT2A) are one workbook with a panel per sample. The app splits it
 automatically into one experiment per panel, named `{experiment_id}_{panel_name}`,
 so one replay produces two notifications and two reports. The manifest keeps ONE
