@@ -93,6 +93,11 @@ concurrency:
 jobs:
   trigger:
     runs-on: [self-hosted, "${{ inputs.runner_label }}"]
+    # A job with no timeout-minutes defaults to 360 (6 hours), which would cancel the whole job,
+    # harness included, long before the harness step's own cap (harness_timeout_minutes, up to
+    # days for a multi-experiment run). 7200 is GitHub's maximum for a self-hosted runner (5 days);
+    # the step-level cap below is the one that actually bounds a run.
+    timeout-minutes: 7200
 
     # Dispatch inputs are exposed as real environment variables here rather
     # than being interpolated as `${{ inputs.* }}` text directly into any
